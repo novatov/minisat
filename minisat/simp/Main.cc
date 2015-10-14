@@ -113,6 +113,7 @@ int main(int argc, char** argv)
         sigTerm(SIGINT_interrupt);
 
         S.eliminate(true);
+        exit(0);
         double simplified_time = cpuTime();
         if (S.verbosity > 0){
             printf("|  Simplification time:  %12.2f s                                       |\n", simplified_time - parsed_time);

@@ -106,6 +106,8 @@ class SimpSolver : public Solver {
 
  protected:
 
+     unsigned long global_subsumed;
+
     // Helper structures:
     //
     struct ElimLt {

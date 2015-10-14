@@ -66,6 +66,7 @@ SimpSolver::SimpSolver() :
     ca.extra_clause_field = true; // NOTE: must happen before allocating the dummy clause below.
     bwdsub_tmpunit        = ca.alloc(dummy);
     remove_satisfied      = false;
+    global_subsumed = 0;
 }
 
 
@@ -386,10 +387,16 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose)
             else if (!ca[cs[j]].mark() &&  cs[j] != cr && (subsumption_lim == -1 || ca[cs[j]].size() < subsumption_lim)){
                 Lit l = c.subsumes(ca[cs[j]]);
 
-                if (l == lit_Undef)
+                if (l == lit_Undef) {
                     subsumed++, removeClause(cs[j]);
-                else if (l != lit_Error){
+                    if (verbosity >= 1) {
+                        printf("Removed clause cs (sz: %d)hrough clause c, of size: %d\n", ca[cs[j]].size(), c.size());
+                    }
+                } else if (l != lit_Error){
                     deleted_literals++;
+                    if (verbosity >= 1) {
+                        printf("Deleted lit from clause cs (sz: %d) through clause c, of size: %d\n", ca[cs[j]].size(), c.size());
+                    }
 
                     if (!strengthenClause(cs[j], ~l))
                         return false;
@@ -400,6 +407,8 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose)
                 }
             }
     }
+
+    global_subsumed+=subsumed;
 
     return true;
 }
@@ -511,6 +520,9 @@ bool SimpSolver::eliminateVar(Var v)
     eliminated[v] = true;
     setDecisionVar(v, false);
     eliminated_vars++;
+    if (verbosity >= 1) {
+        printf("Eliminated %d\n", v);
+    }
 
     if (pos.size() > neg.size()){
         for (int i = 0; i < neg.size(); i++)
@@ -669,9 +681,10 @@ bool SimpSolver::eliminate(bool turn_off_elim)
         checkGarbage();
     }
 
-    if (verbosity >= 1 && elimclauses.size() > 0)
-        printf("|  Eliminated clauses:     %10.2f Mb                                      |\n", 
-               double(elimclauses.size() * sizeof(uint32_t)) / (1024*1024));
+    if (verbosity >= 0) {
+        printf("num-vars-eliminated %d\n", eliminated_vars);
+        printf("global-clauses-subsumed %ld\n", global_subsumed);
+    }
 
     return ok;
 }
