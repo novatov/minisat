@@ -47,14 +47,14 @@ public:
     Var     newVar    (lbool upol = l_Undef, bool dvar = true); // Add a new variable with parameters specifying variable mode.
     void    releaseVar(Lit l);                                  // Make literal true and promise to never refer to variable again.
 
-    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver. 
+    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver.
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
-    bool    addClause (Lit p);                                  // Add a unit clause to the solver. 
-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver. 
-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
-    bool    addClause (Lit p, Lit q, Lit r, Lit s);             // Add a quaternary clause to the solver. 
+    bool    addClause (Lit p);                                  // Add a unit clause to the solver.
+    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
+    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
+    bool    addClause (Lit p, Lit q, Lit r, Lit s);             // Add a quaternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
-                                                                // change the passed vector 'ps'.
+    // change the passed vector 'ps'.
 
     // Solving:
     //
@@ -76,7 +76,7 @@ public:
     TrailIterator  trailEnd  ()   const;
 
     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
-    void    toDimacs     (const char *file, const vec<Lit>& assumps);
+    void    toDimacs     (const char* file, const vec<Lit>& assumps);
     void    toDimacs     (FILE* f, Clause& c, vec<Var>& map, Var& max);
 
     // Convenience versions of 'toDimacs()':
@@ -84,9 +84,9 @@ public:
     void    toDimacs     (const char* file, Lit p);
     void    toDimacs     (const char* file, Lit p, Lit q);
     void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
-    
+
     // Variable mode:
-    // 
+    //
     void    setPolarity    (Var v, lbool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
     void    setDecisionVar (Var v, bool b);  // Declare if a variable should be eligible for selection in the decision heuristic.
 
@@ -121,7 +121,7 @@ public:
     //
     vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
     LSet       conflict;          // If problem is unsatisfiable (possibly under assumptions),
-                                  // this vector represent the final conflict clause expressed in the assumptions.
+    // this vector represent the final conflict clause expressed in the assumptions.
 
     // Mode of operation:
     //
@@ -155,34 +155,52 @@ protected:
 
     // Helper structures:
     //
-    struct VarData { CRef reason; int level; };
-    static inline VarData mkVarData(CRef cr, int l){ VarData d = {cr, l}; return d; }
+    struct VarData {
+        CRef reason;
+        int level;
+    };
+    static inline VarData mkVarData(CRef cr, int l)
+    {
+        VarData d = {cr, l};
+        return d;
+    }
 
     struct Watcher {
         CRef cref;
         Lit  blocker;
         Watcher(CRef cr, Lit p) : cref(cr), blocker(p) {}
-        bool operator==(const Watcher& w) const { return cref == w.cref; }
-        bool operator!=(const Watcher& w) const { return cref != w.cref; }
+        bool operator==(const Watcher& w) const
+        {
+            return cref == w.cref;
+        }
+        bool operator!=(const Watcher& w) const
+        {
+            return cref != w.cref;
+        }
     };
 
-    struct WatcherDeleted
-    {
+    struct WatcherDeleted {
         const ClauseAllocator& ca;
         WatcherDeleted(const ClauseAllocator& _ca) : ca(_ca) {}
-        bool operator()(const Watcher& w) const { return ca[w.cref].mark() == 1; }
+        bool operator()(const Watcher& w) const
+        {
+            return ca[w.cref].mark() == 1;
+        }
     };
 
     struct VarOrderLt {
         const IntMap<Var, double>&  activity;
-        bool operator () (Var x, Var y) const { return activity[x] > activity[y]; }
+        bool operator () (Var x, Var y) const
+        {
+            return activity[x] > activity[y];
+        }
         VarOrderLt(const IntMap<Var, double>&  act) : activity(act) { }
     };
 
     struct ShrinkStackElem {
         uint32_t i;
         Lit      l;
-        ShrinkStackElem(uint32_t _i, Lit _l) : i(_i), l(_l){}
+        ShrinkStackElem(uint32_t _i, Lit _l) : i(_i), l(_l) {}
     };
 
     // Solver state:
@@ -200,7 +218,7 @@ protected:
     VMap<char>          decision;         // Declares if a variable is eligible for selection in the decision heuristic.
     VMap<VarData>       vardata;          // Stores reason and level for each variable.
     OccLists<Lit, vec<Watcher>, WatcherDeleted, MkIndexLit>
-                        watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+    watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
 
     Heap<Var,VarOrderLt>order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 
@@ -285,118 +303,329 @@ protected:
     //
 
     // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double& seed) {
+    static inline double drand(double& seed)
+    {
         seed *= 1389796;
         int q = (int)(seed / 2147483647);
         seed -= (double)q * 2147483647;
-        return seed / 2147483647; }
+        return seed / 2147483647;
+    }
 
     // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size) {
-        return (int)(drand(seed) * size); }
+    static inline int irand(double& seed, int size)
+    {
+        return (int)(drand(seed) * size);
+    }
 };
 
 
 //=================================================================================================
 // Implementation of inline methods:
 
-inline CRef Solver::reason(Var x) const { return vardata[x].reason; }
-inline int  Solver::level (Var x) const { return vardata[x].level; }
+inline CRef Solver::reason(Var x) const
+{
+    return vardata[x].reason;
+}
+inline int  Solver::level (Var x) const
+{
+    return vardata[x].level;
+}
 
-inline void Solver::insertVarOrder(Var x) {
-    if (!order_heap.inHeap(x) && decision[x]) order_heap.insert(x); }
+inline void Solver::insertVarOrder(Var x)
+{
+    if (!order_heap.inHeap(x) && decision[x]) {
+        order_heap.insert(x);
+    }
+}
 
-inline void Solver::varDecayActivity() { var_inc *= (1 / var_decay); }
-inline void Solver::varBumpActivity(Var v) { varBumpActivity(v, var_inc); }
-inline void Solver::varBumpActivity(Var v, double inc) {
+inline void Solver::varDecayActivity()
+{
+    var_inc *= (1 / var_decay);
+}
+inline void Solver::varBumpActivity(Var v)
+{
+    varBumpActivity(v, var_inc);
+}
+inline void Solver::varBumpActivity(Var v, double inc)
+{
     if ( (activity[v] += inc) > 1e100 ) {
         // Rescale:
-        for (int i = 0; i < nVars(); i++)
+        for (int i = 0; i < nVars(); i++) {
             activity[i] *= 1e-100;
-        var_inc *= 1e-100; }
+        }
+        var_inc *= 1e-100;
+    }
 
     // Update order_heap with respect to new activity:
-    if (order_heap.inHeap(v))
-        order_heap.decrease(v); }
+    if (order_heap.inHeap(v)) {
+        order_heap.decrease(v);
+    }
+}
 
-inline void Solver::claDecayActivity() { cla_inc *= (1 / clause_decay); }
-inline void Solver::claBumpActivity (Clause& c) {
-        if ( (c.activity() += cla_inc) > 1e20 ) {
-            // Rescale:
-            for (int i = 0; i < learnts.size(); i++)
-                ca[learnts[i]].activity() *= 1e-20;
-            cla_inc *= 1e-20; } }
+inline void Solver::claDecayActivity()
+{
+    cla_inc *= (1 / clause_decay);
+}
+inline void Solver::claBumpActivity (Clause& c)
+{
+    if ( (c.activity() += cla_inc) > 1e20 ) {
+        // Rescale:
+        for (int i = 0; i < learnts.size(); i++) {
+            ca[learnts[i]].activity() *= 1e-20;
+        }
+        cla_inc *= 1e-20;
+    }
+}
 
-inline void Solver::checkGarbage(void){ return checkGarbage(garbage_frac); }
-inline void Solver::checkGarbage(double gf){
-    if (ca.wasted() > ca.size() * gf)
-        garbageCollect(); }
+inline void Solver::checkGarbage(void)
+{
+    return checkGarbage(garbage_frac);
+}
+inline void Solver::checkGarbage(double gf)
+{
+    if (ca.wasted() > ca.size() * gf) {
+        garbageCollect();
+    }
+}
 
 // NOTE: enqueue does not set the ok flag! (only public methods do)
-inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
-inline bool     Solver::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
-inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
-inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
-inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
-inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
-inline bool     Solver::addClause       (Lit p, Lit q, Lit r, Lit s){ add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); add_tmp.push(s); return addClause_(add_tmp); }
+inline bool     Solver::enqueue         (Lit p, CRef from)
+{
+    return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
+}
+inline bool     Solver::addClause       (const vec<Lit>& ps)
+{
+    ps.copyTo(add_tmp);
+    return addClause_(add_tmp);
+}
+inline bool     Solver::addEmptyClause  ()
+{
+    add_tmp.clear();
+    return addClause_(add_tmp);
+}
+inline bool     Solver::addClause       (Lit p)
+{
+    add_tmp.clear();
+    add_tmp.push(p);
+    return addClause_(add_tmp);
+}
+inline bool     Solver::addClause       (Lit p, Lit q)
+{
+    add_tmp.clear();
+    add_tmp.push(p);
+    add_tmp.push(q);
+    return addClause_(add_tmp);
+}
+inline bool     Solver::addClause       (Lit p, Lit q, Lit r)
+{
+    add_tmp.clear();
+    add_tmp.push(p);
+    add_tmp.push(q);
+    add_tmp.push(r);
+    return addClause_(add_tmp);
+}
+inline bool     Solver::addClause       (Lit p, Lit q, Lit r, Lit s)
+{
+    add_tmp.clear();
+    add_tmp.push(p);
+    add_tmp.push(q);
+    add_tmp.push(r);
+    add_tmp.push(s);
+    return addClause_(add_tmp);
+}
 
-inline bool     Solver::isRemoved       (CRef cr)         const { return ca[cr].mark() == 1; }
-inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c; }
-inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
+inline bool     Solver::isRemoved       (CRef cr)         const
+{
+    return ca[cr].mark() == 1;
+}
+inline bool     Solver::locked          (const Clause& c) const
+{
+    return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c;
+}
+inline void     Solver::newDecisionLevel()
+{
+    trail_lim.push(trail.size());
+}
 
-inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
-inline uint32_t Solver::abstractLevel (Var x) const   { return 1 << (level(x) & 31); }
-inline lbool    Solver::value         (Var x) const   { return assigns[x]; }
-inline lbool    Solver::value         (Lit p) const   { return assigns[var(p)] ^ sign(p); }
-inline lbool    Solver::modelValue    (Var x) const   { return model[x]; }
-inline lbool    Solver::modelValue    (Lit p) const   { return model[var(p)] ^ sign(p); }
-inline int      Solver::nAssigns      ()      const   { return trail.size(); }
-inline int      Solver::nClauses      ()      const   { return num_clauses; }
-inline int      Solver::nLearnts      ()      const   { return num_learnts; }
-inline int      Solver::nVars         ()      const   { return next_var; }
+inline int      Solver::decisionLevel ()      const
+{
+    return trail_lim.size();
+}
+inline uint32_t Solver::abstractLevel (Var x) const
+{
+    return 1 << (level(x) & 31);
+}
+inline lbool    Solver::value         (Var x) const
+{
+    return assigns[x];
+}
+inline lbool    Solver::value         (Lit p) const
+{
+    return assigns[var(p)] ^ sign(p);
+}
+inline lbool    Solver::modelValue    (Var x) const
+{
+    return model[x];
+}
+inline lbool    Solver::modelValue    (Lit p) const
+{
+    return model[var(p)] ^ sign(p);
+}
+inline int      Solver::nAssigns      ()      const
+{
+    return trail.size();
+}
+inline int      Solver::nClauses      ()      const
+{
+    return num_clauses;
+}
+inline int      Solver::nLearnts      ()      const
+{
+    return num_learnts;
+}
+inline int      Solver::nVars         ()      const
+{
+    return next_var;
+}
 // TODO: nFreeVars() is not quite correct, try to calculate right instead of adapting it like below:
-inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
-inline void     Solver::setPolarity   (Var v, lbool b){ user_pol[v] = b; }
-inline void     Solver::setDecisionVar(Var v, bool b) 
-{ 
-    if      ( b && !decision[v]) dec_vars++;
-    else if (!b &&  decision[v]) dec_vars--;
+inline int      Solver::nFreeVars     ()      const
+{
+    return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]);
+}
+inline void     Solver::setPolarity   (Var v, lbool b)
+{
+    user_pol[v] = b;
+}
+inline void     Solver::setDecisionVar(Var v, bool b)
+{
+    if      ( b && !decision[v]) {
+        dec_vars++;
+    } else if (!b &&  decision[v]) {
+        dec_vars--;
+    }
 
     decision[v] = b;
     insertVarOrder(v);
 }
-inline void     Solver::setConfBudget(int64_t x){ conflict_budget    = conflicts    + x; }
-inline void     Solver::setPropBudget(int64_t x){ propagation_budget = propagations + x; }
-inline void     Solver::interrupt(){ asynch_interrupt = true; }
-inline void     Solver::clearInterrupt(){ asynch_interrupt = false; }
-inline void     Solver::budgetOff(){ conflict_budget = propagation_budget = -1; }
-inline bool     Solver::withinBudget() const {
+inline void     Solver::setConfBudget(int64_t x)
+{
+    conflict_budget    = conflicts    + x;
+}
+inline void     Solver::setPropBudget(int64_t x)
+{
+    propagation_budget = propagations + x;
+}
+inline void     Solver::interrupt()
+{
+    asynch_interrupt = true;
+}
+inline void     Solver::clearInterrupt()
+{
+    asynch_interrupt = false;
+}
+inline void     Solver::budgetOff()
+{
+    conflict_budget = propagation_budget = -1;
+}
+inline bool     Solver::withinBudget() const
+{
     return !asynch_interrupt &&
            (conflict_budget    < 0 || conflicts < (uint64_t)conflict_budget) &&
-           (propagation_budget < 0 || propagations < (uint64_t)propagation_budget); }
+           (propagation_budget < 0 || propagations < (uint64_t)propagation_budget);
+}
 
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
 // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
 // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
-inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == l_True; }
-inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == l_True; }
-inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
-inline bool     Solver::okay          ()      const   { return ok; }
+inline bool     Solver::solve         ()
+{
+    budgetOff();
+    assumptions.clear();
+    return solve_() == l_True;
+}
+inline bool     Solver::solve         (Lit p)
+{
+    budgetOff();
+    assumptions.clear();
+    assumptions.push(p);
+    return solve_() == l_True;
+}
+inline bool     Solver::solve         (Lit p, Lit q)
+{
+    budgetOff();
+    assumptions.clear();
+    assumptions.push(p);
+    assumptions.push(q);
+    return solve_() == l_True;
+}
+inline bool     Solver::solve         (Lit p, Lit q, Lit r)
+{
+    budgetOff();
+    assumptions.clear();
+    assumptions.push(p);
+    assumptions.push(q);
+    assumptions.push(r);
+    return solve_() == l_True;
+}
+inline bool     Solver::solve         (const vec<Lit>& assumps)
+{
+    budgetOff();
+    assumps.copyTo(assumptions);
+    return solve_() == l_True;
+}
+inline lbool    Solver::solveLimited  (const vec<Lit>& assumps)
+{
+    assumps.copyTo(assumptions);
+    return solve_();
+}
+inline bool     Solver::okay          ()      const
+{
+    return ok;
+}
 
-inline ClauseIterator Solver::clausesBegin() const { return ClauseIterator(ca, &clauses[0]); }
-inline ClauseIterator Solver::clausesEnd  () const { return ClauseIterator(ca, &clauses[clauses.size()]); }
-inline TrailIterator  Solver::trailBegin  () const { return TrailIterator(&trail[0]); }
-inline TrailIterator  Solver::trailEnd    () const { 
-    return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]); }
+inline ClauseIterator Solver::clausesBegin() const
+{
+    return ClauseIterator(ca, &clauses[0]);
+}
+inline ClauseIterator Solver::clausesEnd  () const
+{
+    return ClauseIterator(ca, &clauses[clauses.size()]);
+}
+inline TrailIterator  Solver::trailBegin  () const
+{
+    return TrailIterator(&trail[0]);
+}
+inline TrailIterator  Solver::trailEnd    () const
+{
+    return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]);
+}
 
-inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p){ vec<Lit> as; as.push(p); toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
+inline void     Solver::toDimacs     (const char* file)
+{
+    vec<Lit> as;
+    toDimacs(file, as);
+}
+inline void     Solver::toDimacs     (const char* file, Lit p)
+{
+    vec<Lit> as;
+    as.push(p);
+    toDimacs(file, as);
+}
+inline void     Solver::toDimacs     (const char* file, Lit p, Lit q)
+{
+    vec<Lit> as;
+    as.push(p);
+    as.push(q);
+    toDimacs(file, as);
+}
+inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r)
+{
+    vec<Lit> as;
+    as.push(p);
+    as.push(q);
+    as.push(r);
+    toDimacs(file, as);
+}
 
 
 //=================================================================================================

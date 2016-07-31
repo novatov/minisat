@@ -34,14 +34,17 @@ static inline double drand(double& seed)
 
 
 // Generate a random integer:
-static inline int irand(double& seed, int size) { return (int)(drand(seed) * size); }
+static inline int irand(double& seed, int size)
+{
+    return (int)(drand(seed) * size);
+}
 
 
 // Randomly shuffle the contents of a vector:
 template<class T>
 static void randomShuffle(double& seed, vec<T>& xs)
 {
-    for (int i = 0; i < xs.size(); i++){
+    for (int i = 0; i < xs.size(); i++) {
         int pick = i + irand(seed, xs.size() - i);
         T tmp = xs[i];
         xs[i] = xs[pick];
@@ -53,9 +56,10 @@ static void randomShuffle(double& seed, vec<T>& xs)
 template<class T>
 static void randomShuffle(double& seed, vec<vec<T> >& xs)
 {
-    for (int i = 0; i < xs.size(); i++){
+    for (int i = 0; i < xs.size(); i++) {
         int pick = i + irand(seed, xs.size() - i);
-        vec<T> tmp; xs[i].moveTo(tmp);
+        vec<T> tmp;
+        xs[i].moveTo(tmp);
         xs[pick].moveTo(xs[i]);
         tmp.moveTo(xs[pick]);
     }
