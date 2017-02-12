@@ -113,6 +113,7 @@ int main(int argc, char** argv)
         sigTerm(SIGINT_interrupt);
 
         S.eliminate(true);
+        printf("num-free-vars %d\n", S.nFreeVars());
         exit(0);
         double simplified_time = cpuTime();
         if (S.verbosity > 0){
