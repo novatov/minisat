@@ -75,14 +75,3 @@ set_target_properties(minisatoeas-lib-shared
 
 set_target_properties(minisatoeas_simp       PROPERTIES OUTPUT_NAME "minisatoeas")
 
-#--------------------------------------------------------------------------------------------------
-# Installation targets:
-
-install(TARGETS minisatoeas-lib-static minisatoeas-lib-shared minisatoeas_core minisatoeas_simp
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-
-install(DIRECTORY minisat/mtl minisat/utils minisat/core minisat/simp
-        DESTINATION include/minisatoeas
-        FILES_MATCHING PATTERN "*.h")
