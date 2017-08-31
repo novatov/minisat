@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_SolverTypes_h
 #define Minisat_SolverTypes_h
 
-#include <assert.h>
+#include <cassert>
 
 #include "minisat/mtl/IntTypes.h"
 #include "minisat/mtl/Alg.h"
