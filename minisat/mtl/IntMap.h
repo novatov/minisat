@@ -24,8 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Minisat {
 
 template<class T> struct MkIndexDefault {
-    typename vec<T>::Size operator()(T t) const
-    {
+    typename vec<T>::Size operator()(T t) const {
         return (typename vec<T>::Size)t;
     }
 };
@@ -37,69 +36,55 @@ class IntMap {
 public:
     explicit IntMap(MkIndex _index = MkIndex()) : index(_index) {}
 
-    bool     has       (K k) const
-    {
+    bool     has       (K k) const {
         return index(k) < map.size();
     }
 
-    const V& operator[](K k) const
-    {
+    const V& operator[](K k) const {
         assert(has(k));
         return map[index(k)];
     }
-    V&       operator[](K k)
-    {
+    V&       operator[](K k) {
         assert(has(k));
         return map[index(k)];
     }
 
-    const V* begin  () const
-    {
+    const V* begin  () const {
         return &map[0];
     }
-    const V* end    () const
-    {
+    const V* end    () const {
         return &map[map.size()];
     }
-    V*       begin  ()
-    {
+    V*       begin  () {
         return &map[0];
     }
-    V*       end    ()
-    {
+    V*       end    () {
         return &map[map.size()];
     }
 
-    void     reserve(K key, V pad)
-    {
+    void     reserve(K key, V pad) {
         map.growTo(index(key)+1, pad);
     }
-    void     reserve(K key)
-    {
+    void     reserve(K key) {
         map.growTo(index(key)+1);
     }
-    void     insert (K key, V val, V pad)
-    {
+    void     insert (K key, V val, V pad) {
         reserve(key, pad);
         operator[](key) = val;
     }
-    void     insert (K key, V val)
-    {
+    void     insert (K key, V val) {
         reserve(key);
         operator[](key) = val;
     }
 
-    void     clear  (bool dispose = false)
-    {
+    void     clear  (bool dispose = false) {
         map.clear(dispose);
     }
-    void     moveTo (IntMap& to)
-    {
+    void     moveTo (IntMap& to) {
         map.moveTo(to.map);
         to.index = index;
     }
-    void     copyTo (IntMap& to) const
-    {
+    void     copyTo (IntMap& to) const {
         map.copyTo(to.map);
         to.index = index;
     }
@@ -113,12 +98,10 @@ class IntSet {
 
 public:
     // Size operations:
-    int      size        (void)      const
-    {
+    int      size        (void)      const {
         return xs.size();
     }
-    void     clear       (bool free = false)
-    {
+    void     clear       (bool free = false) {
         if (free) {
             in_set.clear(true);
         } else
@@ -130,28 +113,24 @@ public:
 
     // Allow inspecting the internal vector:
     const vec<K>&
-    toVec       ()          const
-    {
+    toVec       ()          const {
         return xs;
     }
 
     // Vector interface:
-    K        operator [] (int index) const
-    {
+    K        operator [] (int index) const {
         return xs[index];
     }
 
 
-    void     insert      (K k)
-    {
+    void     insert      (K k) {
         in_set.reserve(k, 0);
         if (!in_set[k]) {
             in_set[k] = 1;
             xs.push(k);
         }
     }
-    bool     has         (K k)
-    {
+    bool     has         (K k) {
         in_set.reserve(k, 0);
         return in_set[k];
     }

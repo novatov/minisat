@@ -23,8 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 using namespace Minisat;
 
-void Minisat::parseOptions(int& argc, char** argv, bool strict)
-{
+void Minisat::parseOptions(int& argc, char** argv, bool strict) {
     int i, j;
     for (i = j = 1; i < argc; i++) {
         const char* str = argv[i];
@@ -57,16 +56,13 @@ void Minisat::parseOptions(int& argc, char** argv, bool strict)
 }
 
 
-void Minisat::setUsageHelp      (const char* str)
-{
+void Minisat::setUsageHelp      (const char* str) {
     Option::getUsageString() = str;
 }
-void Minisat::setHelpPrefixStr  (const char* str)
-{
+void Minisat::setHelpPrefixStr  (const char* str) {
     Option::getHelpPrefixString() = str;
 }
-void Minisat::printUsageAndExit (int /*argc*/, char** argv, bool verbose)
-{
+void Minisat::printUsageAndExit (int /*argc*/, char** argv, bool verbose) {
     const char* usage = Option::getUsageString();
     if (usage != NULL) {
         fprintf(stderr, usage, argv[0]);

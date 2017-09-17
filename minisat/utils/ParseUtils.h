@@ -43,8 +43,7 @@ class StreamBuffer {
 
     enum { buffer_size = 64*1024 };
 
-    void assureLookahead()
-    {
+    void assureLookahead() {
         if (pos >= size) {
             pos  = 0;
             size = gzread(in, buf, buffer_size);
@@ -52,27 +51,22 @@ class StreamBuffer {
     }
 
 public:
-    explicit StreamBuffer(gzFile i) : in(i), pos(0), size(0)
-    {
+    explicit StreamBuffer(gzFile i) : in(i), pos(0), size(0) {
         buf = (unsigned char*)xrealloc(NULL, buffer_size);
         assureLookahead();
     }
-    ~StreamBuffer()
-    {
+    ~StreamBuffer() {
         free(buf);
     }
 
-    int  operator *  () const
-    {
+    int  operator *  () const {
         return (pos >= size) ? EOF : buf[pos];
     }
-    void operator ++ ()
-    {
+    void operator ++ () {
         pos++;
         assureLookahead();
     }
-    int  position    () const
-    {
+    int  position    () const {
         return pos;
     }
 };
@@ -82,12 +76,10 @@ public:
 // End-of-file detection functions for StreamBuffer and char*:
 
 
-static inline bool isEof(StreamBuffer& in)
-{
+static inline bool isEof(StreamBuffer& in) {
     return *in == EOF;
 }
-static inline bool isEof(const char*   in)
-{
+static inline bool isEof(const char*   in) {
     return *in == '\0';
 }
 
@@ -96,8 +88,7 @@ static inline bool isEof(const char*   in)
 
 
 template<class B>
-static void skipWhitespace(B& in)
-{
+static void skipWhitespace(B& in) {
     while ((*in >= 9 && *in <= 13) || *in == 32) {
         ++in;
     }
@@ -105,8 +96,7 @@ static void skipWhitespace(B& in)
 
 
 template<class B>
-static void skipLine(B& in)
-{
+static void skipLine(B& in) {
     for (;;) {
         if (isEof(in)) {
             return;
@@ -121,8 +111,7 @@ static void skipLine(B& in)
 
 
 template<class B>
-static int parseInt(B& in)
-{
+static int parseInt(B& in) {
     int     val = 0;
     bool    neg = false;
     skipWhitespace(in);
@@ -144,8 +133,7 @@ static int parseInt(B& in)
 // String matching: in case of a match the input iterator will be advanced the corresponding
 // number of characters.
 template<class B>
-static bool match(B& in, const char* str)
-{
+static bool match(B& in, const char* str) {
     int i;
     for (i = 0; str[i] != '\0'; i++)
         if (in[i] != str[i]) {
@@ -159,8 +147,7 @@ static bool match(B& in, const char* str)
 
 // String matching: consumes characters eagerly, but does not require random access iterator.
 template<class B>
-static bool eagerMatch(B& in, const char* str)
-{
+static bool eagerMatch(B& in, const char* str) {
     for (; *str != '\0'; ++str, ++in)
         if (*str != *in) {
             return false;

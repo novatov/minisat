@@ -159,8 +159,7 @@ protected:
         CRef reason;
         int level;
     };
-    static inline VarData mkVarData(CRef cr, int l)
-    {
+    static inline VarData mkVarData(CRef cr, int l) {
         VarData d = {cr, l};
         return d;
     }
@@ -169,12 +168,10 @@ protected:
         CRef cref;
         Lit  blocker;
         Watcher(CRef cr, Lit p) : cref(cr), blocker(p) {}
-        bool operator==(const Watcher& w) const
-        {
+        bool operator==(const Watcher& w) const {
             return cref == w.cref;
         }
-        bool operator!=(const Watcher& w) const
-        {
+        bool operator!=(const Watcher& w) const {
             return cref != w.cref;
         }
     };
@@ -182,16 +179,14 @@ protected:
     struct WatcherDeleted {
         const ClauseAllocator& ca;
         WatcherDeleted(const ClauseAllocator& _ca) : ca(_ca) {}
-        bool operator()(const Watcher& w) const
-        {
+        bool operator()(const Watcher& w) const {
             return ca[w.cref].mark() == 1;
         }
     };
 
     struct VarOrderLt {
         const IntMap<Var, double>&  activity;
-        bool operator () (Var x, Var y) const
-        {
+        bool operator () (Var x, Var y) const {
             return activity[x] > activity[y];
         }
         VarOrderLt(const IntMap<Var, double>&  act) : activity(act) { }
@@ -303,8 +298,7 @@ protected:
     //
 
     // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double& seed)
-    {
+    static inline double drand(double& seed) {
         seed *= 1389796;
         int q = (int)(seed / 2147483647);
         seed -= (double)q * 2147483647;
@@ -312,8 +306,7 @@ protected:
     }
 
     // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size)
-    {
+    static inline int irand(double& seed, int size) {
         return (int)(drand(seed) * size);
     }
 };
@@ -322,32 +315,26 @@ protected:
 //=================================================================================================
 // Implementation of inline methods:
 
-inline CRef Solver::reason(Var x) const
-{
+inline CRef Solver::reason(Var x) const {
     return vardata[x].reason;
 }
-inline int  Solver::level (Var x) const
-{
+inline int  Solver::level (Var x) const {
     return vardata[x].level;
 }
 
-inline void Solver::insertVarOrder(Var x)
-{
+inline void Solver::insertVarOrder(Var x) {
     if (!order_heap.inHeap(x) && decision[x]) {
         order_heap.insert(x);
     }
 }
 
-inline void Solver::varDecayActivity()
-{
+inline void Solver::varDecayActivity() {
     var_inc *= (1 / var_decay);
 }
-inline void Solver::varBumpActivity(Var v)
-{
+inline void Solver::varBumpActivity(Var v) {
     varBumpActivity(v, var_inc);
 }
-inline void Solver::varBumpActivity(Var v, double inc)
-{
+inline void Solver::varBumpActivity(Var v, double inc) {
     if ( (activity[v] += inc) > 1e100 ) {
         // Rescale:
         for (int i = 0; i < nVars(); i++) {
@@ -362,12 +349,10 @@ inline void Solver::varBumpActivity(Var v, double inc)
     }
 }
 
-inline void Solver::claDecayActivity()
-{
+inline void Solver::claDecayActivity() {
     cla_inc *= (1 / clause_decay);
 }
-inline void Solver::claBumpActivity (Clause& c)
-{
+inline void Solver::claBumpActivity (Clause& c) {
     if ( (c.activity() += cla_inc) > 1e20 ) {
         // Rescale:
         for (int i = 0; i < learnts.size(); i++) {
@@ -377,55 +362,46 @@ inline void Solver::claBumpActivity (Clause& c)
     }
 }
 
-inline void Solver::checkGarbage(void)
-{
+inline void Solver::checkGarbage(void) {
     return checkGarbage(garbage_frac);
 }
-inline void Solver::checkGarbage(double gf)
-{
+inline void Solver::checkGarbage(double gf) {
     if (ca.wasted() > ca.size() * gf) {
         garbageCollect();
     }
 }
 
 // NOTE: enqueue does not set the ok flag! (only public methods do)
-inline bool     Solver::enqueue         (Lit p, CRef from)
-{
+inline bool     Solver::enqueue         (Lit p, CRef from) {
     return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
-inline bool     Solver::addClause       (const vec<Lit>& ps)
-{
+inline bool     Solver::addClause       (const vec<Lit>& ps) {
     ps.copyTo(add_tmp);
     return addClause_(add_tmp);
 }
-inline bool     Solver::addEmptyClause  ()
-{
+inline bool     Solver::addEmptyClause  () {
     add_tmp.clear();
     return addClause_(add_tmp);
 }
-inline bool     Solver::addClause       (Lit p)
-{
+inline bool     Solver::addClause       (Lit p) {
     add_tmp.clear();
     add_tmp.push(p);
     return addClause_(add_tmp);
 }
-inline bool     Solver::addClause       (Lit p, Lit q)
-{
+inline bool     Solver::addClause       (Lit p, Lit q) {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
     return addClause_(add_tmp);
 }
-inline bool     Solver::addClause       (Lit p, Lit q, Lit r)
-{
+inline bool     Solver::addClause       (Lit p, Lit q, Lit r) {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
     add_tmp.push(r);
     return addClause_(add_tmp);
 }
-inline bool     Solver::addClause       (Lit p, Lit q, Lit r, Lit s)
-{
+inline bool     Solver::addClause       (Lit p, Lit q, Lit r, Lit s) {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
@@ -434,70 +410,54 @@ inline bool     Solver::addClause       (Lit p, Lit q, Lit r, Lit s)
     return addClause_(add_tmp);
 }
 
-inline bool     Solver::isRemoved       (CRef cr)         const
-{
+inline bool     Solver::isRemoved       (CRef cr)         const {
     return ca[cr].mark() == 1;
 }
-inline bool     Solver::locked          (const Clause& c) const
-{
+inline bool     Solver::locked          (const Clause& c) const {
     return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c;
 }
-inline void     Solver::newDecisionLevel()
-{
+inline void     Solver::newDecisionLevel() {
     trail_lim.push(trail.size());
 }
 
-inline int      Solver::decisionLevel ()      const
-{
+inline int      Solver::decisionLevel ()      const {
     return trail_lim.size();
 }
-inline uint32_t Solver::abstractLevel (Var x) const
-{
+inline uint32_t Solver::abstractLevel (Var x) const {
     return 1 << (level(x) & 31);
 }
-inline lbool    Solver::value         (Var x) const
-{
+inline lbool    Solver::value         (Var x) const {
     return assigns[x];
 }
-inline lbool    Solver::value         (Lit p) const
-{
+inline lbool    Solver::value         (Lit p) const {
     return assigns[var(p)] ^ sign(p);
 }
-inline lbool    Solver::modelValue    (Var x) const
-{
+inline lbool    Solver::modelValue    (Var x) const {
     return model[x];
 }
-inline lbool    Solver::modelValue    (Lit p) const
-{
+inline lbool    Solver::modelValue    (Lit p) const {
     return model[var(p)] ^ sign(p);
 }
-inline int      Solver::nAssigns      ()      const
-{
+inline int      Solver::nAssigns      ()      const {
     return trail.size();
 }
-inline int      Solver::nClauses      ()      const
-{
+inline int      Solver::nClauses      ()      const {
     return num_clauses;
 }
-inline int      Solver::nLearnts      ()      const
-{
+inline int      Solver::nLearnts      ()      const {
     return num_learnts;
 }
-inline int      Solver::nVars         ()      const
-{
+inline int      Solver::nVars         ()      const {
     return next_var;
 }
 // TODO: nFreeVars() is not quite correct, try to calculate right instead of adapting it like below:
-inline int      Solver::nFreeVars     ()      const
-{
+inline int      Solver::nFreeVars     ()      const {
     return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]);
 }
-inline void     Solver::setPolarity   (Var v, lbool b)
-{
+inline void     Solver::setPolarity   (Var v, lbool b) {
     user_pol[v] = b;
 }
-inline void     Solver::setDecisionVar(Var v, bool b)
-{
+inline void     Solver::setDecisionVar(Var v, bool b) {
     if      ( b && !decision[v]) {
         dec_vars++;
     } else if (!b &&  decision[v]) {
@@ -507,28 +467,22 @@ inline void     Solver::setDecisionVar(Var v, bool b)
     decision[v] = b;
     insertVarOrder(v);
 }
-inline void     Solver::setConfBudget(int64_t x)
-{
+inline void     Solver::setConfBudget(int64_t x) {
     conflict_budget    = conflicts    + x;
 }
-inline void     Solver::setPropBudget(int64_t x)
-{
+inline void     Solver::setPropBudget(int64_t x) {
     propagation_budget = propagations + x;
 }
-inline void     Solver::interrupt()
-{
+inline void     Solver::interrupt() {
     asynch_interrupt = true;
 }
-inline void     Solver::clearInterrupt()
-{
+inline void     Solver::clearInterrupt() {
     asynch_interrupt = false;
 }
-inline void     Solver::budgetOff()
-{
+inline void     Solver::budgetOff() {
     conflict_budget = propagation_budget = -1;
 }
-inline bool     Solver::withinBudget() const
-{
+inline bool     Solver::withinBudget() const {
     return !asynch_interrupt &&
            (conflict_budget    < 0 || conflicts < (uint64_t)conflict_budget) &&
            (propagation_budget < 0 || propagations < (uint64_t)propagation_budget);
@@ -537,29 +491,25 @@ inline bool     Solver::withinBudget() const
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
 // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
 // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
-inline bool     Solver::solve         ()
-{
+inline bool     Solver::solve         () {
     budgetOff();
     assumptions.clear();
     return solve_() == l_True;
 }
-inline bool     Solver::solve         (Lit p)
-{
+inline bool     Solver::solve         (Lit p) {
     budgetOff();
     assumptions.clear();
     assumptions.push(p);
     return solve_() == l_True;
 }
-inline bool     Solver::solve         (Lit p, Lit q)
-{
+inline bool     Solver::solve         (Lit p, Lit q) {
     budgetOff();
     assumptions.clear();
     assumptions.push(p);
     assumptions.push(q);
     return solve_() == l_True;
 }
-inline bool     Solver::solve         (Lit p, Lit q, Lit r)
-{
+inline bool     Solver::solve         (Lit p, Lit q, Lit r) {
     budgetOff();
     assumptions.clear();
     assumptions.push(p);
@@ -567,59 +517,48 @@ inline bool     Solver::solve         (Lit p, Lit q, Lit r)
     assumptions.push(r);
     return solve_() == l_True;
 }
-inline bool     Solver::solve         (const vec<Lit>& assumps)
-{
+inline bool     Solver::solve         (const vec<Lit>& assumps) {
     budgetOff();
     assumps.copyTo(assumptions);
     return solve_() == l_True;
 }
-inline lbool    Solver::solveLimited  (const vec<Lit>& assumps)
-{
+inline lbool    Solver::solveLimited  (const vec<Lit>& assumps) {
     assumps.copyTo(assumptions);
     return solve_();
 }
-inline bool     Solver::okay          ()      const
-{
+inline bool     Solver::okay          ()      const {
     return ok;
 }
 
-inline ClauseIterator Solver::clausesBegin() const
-{
+inline ClauseIterator Solver::clausesBegin() const {
     return ClauseIterator(ca, &clauses[0]);
 }
-inline ClauseIterator Solver::clausesEnd  () const
-{
+inline ClauseIterator Solver::clausesEnd  () const {
     return ClauseIterator(ca, &clauses[clauses.size()]);
 }
-inline TrailIterator  Solver::trailBegin  () const
-{
+inline TrailIterator  Solver::trailBegin  () const {
     return TrailIterator(&trail[0]);
 }
-inline TrailIterator  Solver::trailEnd    () const
-{
+inline TrailIterator  Solver::trailEnd    () const {
     return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]);
 }
 
-inline void     Solver::toDimacs     (const char* file)
-{
+inline void     Solver::toDimacs     (const char* file) {
     vec<Lit> as;
     toDimacs(file, as);
 }
-inline void     Solver::toDimacs     (const char* file, Lit p)
-{
+inline void     Solver::toDimacs     (const char* file, Lit p) {
     vec<Lit> as;
     as.push(p);
     toDimacs(file, as);
 }
-inline void     Solver::toDimacs     (const char* file, Lit p, Lit q)
-{
+inline void     Solver::toDimacs     (const char* file, Lit p, Lit q) {
     vec<Lit> as;
     as.push(p);
     as.push(q);
     toDimacs(file, as);
 }
-inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r)
-{
+inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r) {
     vec<Lit> as;
     as.push(p);
     as.push(q);

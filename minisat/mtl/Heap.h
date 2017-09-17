@@ -37,22 +37,18 @@ class Heap {
     Comp                  lt;       // The heap is a minimum-heap with respect to this comparator
 
     // Index "traversal" functions
-    static inline int left  (int i)
-    {
+    static inline int left  (int i) {
         return i*2+1;
     }
-    static inline int right (int i)
-    {
+    static inline int right (int i) {
         return (i+1)*2;
     }
-    static inline int parent(int i)
-    {
+    static inline int parent(int i) {
         return (i-1) >> 1;
     }
 
 
-    void percolateUp(int i)
-    {
+    void percolateUp(int i) {
         K   x  = heap[i];
         int p  = parent(i);
 
@@ -67,8 +63,7 @@ class Heap {
     }
 
 
-    void percolateDown(int i)
-    {
+    void percolateDown(int i) {
         K x = heap[i];
         while (left(i) < heap.size()) {
             int child = right(i) < heap.size() && lt(heap[right(i)], heap[left(i)]) ? right(i) : left(i);
@@ -87,39 +82,32 @@ class Heap {
 public:
     Heap(const Comp& c, MkIndex _index = MkIndex()) : indices(_index), lt(c) {}
 
-    int  size      ()          const
-    {
+    int  size      ()          const {
         return heap.size();
     }
-    bool empty     ()          const
-    {
+    bool empty     ()          const {
         return heap.size() == 0;
     }
-    bool inHeap    (K k)       const
-    {
+    bool inHeap    (K k)       const {
         return indices.has(k) && indices[k] >= 0;
     }
-    int  operator[](int index) const
-    {
+    int  operator[](int index) const {
         assert(index < heap.size());
         return heap[index];
     }
 
-    void decrease  (K k)
-    {
+    void decrease  (K k) {
         assert(inHeap(k));
         percolateUp  (indices[k]);
     }
-    void increase  (K k)
-    {
+    void increase  (K k) {
         assert(inHeap(k));
         percolateDown(indices[k]);
     }
 
 
     // Safe variant of insert/decrease/increase:
-    void update(K k)
-    {
+    void update(K k) {
         if (!inHeap(k)) {
             insert(k);
         } else {
@@ -129,8 +117,7 @@ public:
     }
 
 
-    void insert(K k)
-    {
+    void insert(K k) {
         indices.reserve(k, -1);
         assert(!inHeap(k));
 
@@ -140,8 +127,7 @@ public:
     }
 
 
-    void remove(K k)
-    {
+    void remove(K k) {
         assert(inHeap(k));
 
         int k_pos  = indices[k];
@@ -158,8 +144,7 @@ public:
     }
 
 
-    K removeMin()
-    {
+    K removeMin() {
         K x              = heap[0];
         heap[0]          = heap.last();
         indices[heap[0]] = 0;
@@ -173,8 +158,7 @@ public:
 
 
     // Rebuild the heap from scratch, using the elements in 'ns':
-    void build(const vec<K>& ns)
-    {
+    void build(const vec<K>& ns) {
         for (int i = 0; i < heap.size(); i++) {
             indices[heap[i]] = -1;
         }
@@ -192,8 +176,7 @@ public:
         }
     }
 
-    void clear(bool dispose = false)
-    {
+    void clear(bool dispose = false) {
         // TODO: shouldn't the 'indices' map also be dispose-cleared?
         for (int i = 0; i < heap.size(); i++) {
             indices[heap[i]] = -1;

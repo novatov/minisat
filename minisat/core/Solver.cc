@@ -104,8 +104,7 @@ Solver::Solver() :
 {}
 
 
-Solver::~Solver()
-{
+Solver::~Solver() {
 }
 
 
@@ -116,8 +115,7 @@ Solver::~Solver()
 // Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
 // used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
 //
-Var Solver::newVar(lbool upol, bool dvar)
-{
+Var Solver::newVar(lbool upol, bool dvar) {
     Var v;
     if (free_vars.size() > 0) {
         v = free_vars.last();
@@ -143,8 +141,7 @@ Var Solver::newVar(lbool upol, bool dvar)
 
 // Note: at the moment, only unassigned variable will be released (this is to avoid duplicate
 // releases of the same variable).
-void Solver::releaseVar(Lit l)
-{
+void Solver::releaseVar(Lit l) {
     if (value(l) == l_Undef) {
         addClause(l);
         released_vars.push(var(l));
@@ -152,8 +149,7 @@ void Solver::releaseVar(Lit l)
 }
 
 
-bool Solver::addClause_(vec<Lit>& ps)
-{
+bool Solver::addClause_(vec<Lit>& ps) {
     assert(decisionLevel() == 0);
     if (!ok) {
         return false;
@@ -186,8 +182,7 @@ bool Solver::addClause_(vec<Lit>& ps)
 }
 
 
-void Solver::attachClause(CRef cr)
-{
+void Solver::attachClause(CRef cr) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
     watches[~c[0]].push(Watcher(cr, c[1]));
@@ -200,8 +195,7 @@ void Solver::attachClause(CRef cr)
 }
 
 
-void Solver::detachClause(CRef cr, bool strict)
-{
+void Solver::detachClause(CRef cr, bool strict) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
 
@@ -222,8 +216,7 @@ void Solver::detachClause(CRef cr, bool strict)
 }
 
 
-void Solver::removeClause(CRef cr)
-{
+void Solver::removeClause(CRef cr) {
     Clause& c = ca[cr];
     detachClause(cr);
     // Don't leave pointers to free'd memory!
@@ -235,8 +228,7 @@ void Solver::removeClause(CRef cr)
 }
 
 
-bool Solver::satisfied(const Clause& c) const
-{
+bool Solver::satisfied(const Clause& c) const {
     for (int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True) {
             return true;
@@ -247,8 +239,7 @@ bool Solver::satisfied(const Clause& c) const
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
 //
-void Solver::cancelUntil(int level)
-{
+void Solver::cancelUntil(int level) {
     if (decisionLevel() > level) {
         for (int c = trail.size()-1; c >= trail_lim[level]; c--) {
             Var      x  = var(trail[c]);
@@ -269,8 +260,7 @@ void Solver::cancelUntil(int level)
 // Major methods:
 
 
-Lit Solver::pickBranchLit()
-{
+Lit Solver::pickBranchLit() {
     Var next = var_Undef;
 
     // Random decision:
@@ -320,8 +310,7 @@ Lit Solver::pickBranchLit()
 |        rest of literals. There may be others from the same level though.
 |
 |________________________________________________________________________________________________@*/
-void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
-{
+void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
     int pathC = 0;
     Lit p     = lit_Undef;
 
@@ -420,8 +409,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 
 
 // Check if 'p' can be removed from a conflict clause.
-bool Solver::litRedundant(Lit p)
-{
+bool Solver::litRedundant(Lit p) {
     enum { seen_undef = 0, seen_source = 1, seen_removable = 2, seen_failed = 3 };
     assert(seen[var(p)] == seen_undef || seen[var(p)] == seen_source);
     assert(reason(var(p)) != CRef_Undef);
@@ -491,8 +479,7 @@ bool Solver::litRedundant(Lit p)
 |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
 |    stores the result in 'out_conflict'.
 |________________________________________________________________________________________________@*/
-void Solver::analyzeFinal(Lit p, LSet& out_conflict)
-{
+void Solver::analyzeFinal(Lit p, LSet& out_conflict) {
     out_conflict.clear();
     out_conflict.insert(p);
 
@@ -523,8 +510,7 @@ void Solver::analyzeFinal(Lit p, LSet& out_conflict)
 }
 
 
-void Solver::uncheckedEnqueue(Lit p, CRef from)
-{
+void Solver::uncheckedEnqueue(Lit p, CRef from) {
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -543,8 +529,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from)
 |    Post-conditions:
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
-CRef Solver::propagate()
-{
+CRef Solver::propagate() {
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
 
@@ -625,13 +610,11 @@ NextClause:
 struct reduceDB_lt {
     ClauseAllocator& ca;
     reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
-    bool operator () (CRef x, CRef y)
-    {
+    bool operator () (CRef x, CRef y) {
         return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity());
     }
 };
-void Solver::reduceDB()
-{
+void Solver::reduceDB() {
     int     i, j;
     double  extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
@@ -651,8 +634,7 @@ void Solver::reduceDB()
 }
 
 
-void Solver::removeSatisfied(vec<CRef>& cs)
-{
+void Solver::removeSatisfied(vec<CRef>& cs) {
     int i, j;
     for (i = j = 0; i < cs.size(); i++) {
         Clause& c = ca[cs[i]];
@@ -673,8 +655,7 @@ void Solver::removeSatisfied(vec<CRef>& cs)
 }
 
 
-void Solver::rebuildOrderHeap()
-{
+void Solver::rebuildOrderHeap() {
     vec<Var> vs;
     for (Var v = 0; v < nVars(); v++)
         if (decision[v] && value(v) == l_Undef) {
@@ -692,8 +673,7 @@ void Solver::rebuildOrderHeap()
 |    Simplify the clause database according to the current top-level assigment. Currently, the only
 |    thing done here is the removal of satisfied clauses, but more things can be put here.
 |________________________________________________________________________________________________@*/
-bool Solver::simplify()
-{
+bool Solver::simplify() {
     assert(decisionLevel() == 0);
 
     if (!ok || propagate() != CRef_Undef) {
@@ -757,8 +737,7 @@ bool Solver::simplify()
 |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
 |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
 |________________________________________________________________________________________________@*/
-lbool Solver::search(int nof_conflicts)
-{
+lbool Solver::search(int nof_conflicts) {
     assert(ok);
     int         backtrack_level;
     int         conflictC = 0;
@@ -860,8 +839,7 @@ lbool Solver::search(int nof_conflicts)
 }
 
 
-double Solver::progressEstimate() const
-{
+double Solver::progressEstimate() const {
     double  progress = 0;
     double  F = 1.0 / nVars();
 
@@ -886,8 +864,7 @@ double Solver::progressEstimate() const
 
  */
 
-static double luby(double y, int x)
-{
+static double luby(double y, int x) {
 
     // Find the finite subsequence that contains index 'x', and the
     // size of that subsequence:
@@ -904,8 +881,7 @@ static double luby(double y, int x)
 }
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
-lbool Solver::solve_()
-{
+lbool Solver::solve_() {
     model.clear();
     conflict.clear();
     if (!ok) {
@@ -961,8 +937,7 @@ lbool Solver::solve_()
 }
 
 
-bool Solver::implies(const vec<Lit>& assumps, vec<Lit>& out)
-{
+bool Solver::implies(const vec<Lit>& assumps, vec<Lit>& out) {
     trail_lim.push(trail.size());
     for (int i = 0; i < assumps.size(); i++) {
         Lit a = assumps[i];
@@ -995,8 +970,7 @@ bool Solver::implies(const vec<Lit>& assumps, vec<Lit>& out)
 //
 // FIXME: this needs to be rewritten completely.
 
-static Var mapVar(Var x, vec<Var>& map, Var& max)
-{
+static Var mapVar(Var x, vec<Var>& map, Var& max) {
     if (map.size() <= x || map[x] == -1) {
         map.growTo(x+1, -1);
         map[x] = max++;
@@ -1005,8 +979,7 @@ static Var mapVar(Var x, vec<Var>& map, Var& max)
 }
 
 
-void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max)
-{
+void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max) {
     if (satisfied(c)) {
         return;
     }
@@ -1019,8 +992,7 @@ void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max)
 }
 
 
-void Solver::toDimacs(const char* file, const vec<Lit>& assumps)
-{
+void Solver::toDimacs(const char* file, const vec<Lit>& assumps) {
     FILE* f = fopen(file, "wr");
     if (f == NULL) {
         fprintf(stderr, "could not open file %s\n", file), exit(1);
@@ -1030,8 +1002,7 @@ void Solver::toDimacs(const char* file, const vec<Lit>& assumps)
 }
 
 
-void Solver::toDimacs(FILE* f, const vec<Lit>& assumps)
-{
+void Solver::toDimacs(FILE* f, const vec<Lit>& assumps) {
     // Handle case when solver is in contradictory state:
     if (!ok) {
         fprintf(f, "p cnf 1 2\n1 0\n-1 0\n");
@@ -1078,12 +1049,11 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps)
 }
 
 
-void Solver::printStats() const
-{
+void Solver::printStats() const {
     double cpu_time = cpuTime();
     double mem_used = memUsedPeak();
     printf("restarts              : %"PRIu64"\n", starts);
-    printf("conflicts             : %-12"PRIu64"   (%.0f /sec)\n", conflicts   , conflicts   /cpu_time);
+    printf("conflicts             : %-12"PRIu64"   (%.0f /sec)\n", conflicts, conflicts   /cpu_time);
     printf("decisions             : %-12"PRIu64"   (%4.2f %% random) (%.0f /sec)\n", decisions, (float)rnd_decisions*100 / (float)decisions, decisions   /cpu_time);
     printf("propagations          : %-12"PRIu64"   (%.0f /sec)\n", propagations, propagations/cpu_time);
     printf("conflict literals     : %-12"PRIu64"   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals)*100 / (double)max_literals);
@@ -1097,8 +1067,7 @@ void Solver::printStats() const
 //=================================================================================================
 // Garbage Collection methods:
 
-void Solver::relocAll(ClauseAllocator& to)
-{
+void Solver::relocAll(ClauseAllocator& to) {
     // All watchers:
     //
     watches.cleanAll();
@@ -1145,8 +1114,7 @@ void Solver::relocAll(ClauseAllocator& to)
 }
 
 
-void Solver::garbageCollect()
-{
+void Solver::garbageCollect() {
     // Initialize the next region to a size corresponding to the estimated utilization degree. This
     // is not precise but should avoid some unnecessary reallocations for the new region:
     ClauseAllocator to(ca.size() - ca.wasted());

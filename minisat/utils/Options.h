@@ -52,25 +52,21 @@ protected:
     const char* category;
     const char* type_name;
 
-    static vec<Option*>& getOptionList ()
-    {
+    static vec<Option*>& getOptionList () {
         static vec<Option*> options;
         return options;
     }
-    static const char*&  getUsageString()
-    {
+    static const char*&  getUsageString() {
         static const char* usage_str;
         return usage_str;
     }
-    static const char*&  getHelpPrefixString()
-    {
+    static const char*&  getHelpPrefixString() {
         static const char* help_prefix_str = "";
         return help_prefix_str;
     }
 
     struct OptionLt {
-        bool operator()(const Option* x, const Option* y)
-        {
+        bool operator()(const Option* x, const Option* y) {
             int test1 = strcmp(x->category, y->category);
             return test1 < 0 || (test1 == 0 && strcmp(x->type_name, y->type_name) < 0);
         }
@@ -83,8 +79,7 @@ protected:
         name       (name_)
         , description(desc_)
         , category   (cate_)
-        , type_name  (type_)
-    {
+        , type_name  (type_) {
         getOptionList().push(this);
     }
 
@@ -137,27 +132,22 @@ protected:
 
 public:
     DoubleOption(const char* c, const char* n, const char* d, double def = double(), DoubleRange r = DoubleRange(-HUGE_VAL, false, HUGE_VAL, false))
-        : Option(n, d, c, "<double>"), range(r), value(def)
-    {
+        : Option(n, d, c, "<double>"), range(r), value(def) {
         // FIXME: set LC_NUMERIC to "C" to make sure that strtof/strtod parses decimal point correctly.
     }
 
-    operator      double   (void) const
-    {
+    operator      double   (void) const {
         return value;
     }
-    operator      double&  (void)
-    {
+    operator      double&  (void) {
         return value;
     }
-    DoubleOption& operator=(double x)
-    {
+    DoubleOption& operator=(double x) {
         value = x;
         return *this;
     }
 
-    virtual bool parse(const char* str)
-    {
+    virtual bool parse(const char* str) {
         const char* span = str;
 
         if (!match(span, "-") || !match(span, name) || !match(span, "=")) {
@@ -183,8 +173,7 @@ public:
         return true;
     }
 
-    virtual void help (bool verbose = false)
-    {
+    virtual void help (bool verbose = false) {
         fprintf(stderr, "  -%-12s = %-8s %c%4.2g .. %4.2g%c (default: %g)\n",
                 name, type_name,
                 range.begin_inclusive ? '[' : '(',
@@ -213,22 +202,18 @@ public:
     IntOption(const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange(INT32_MIN, INT32_MAX))
         : Option(n, d, c, "<int32>"), range(r), value(def) {}
 
-    operator   int32_t   (void) const
-    {
+    operator   int32_t   (void) const {
         return value;
     }
-    operator   int32_t&  (void)
-    {
+    operator   int32_t&  (void) {
         return value;
     }
-    IntOption& operator= (int32_t x)
-    {
+    IntOption& operator= (int32_t x) {
         value = x;
         return *this;
     }
 
-    virtual bool parse(const char* str)
-    {
+    virtual bool parse(const char* str) {
         const char* span = str;
 
         if (!match(span, "-") || !match(span, name) || !match(span, "=")) {
@@ -253,8 +238,7 @@ public:
         return true;
     }
 
-    virtual void help (bool verbose = false)
-    {
+    virtual void help (bool verbose = false) {
         fprintf(stderr, "  -%-12s = %-8s [", name, type_name);
         if (range.begin == INT32_MIN) {
             fprintf(stderr, "imin");
@@ -290,22 +274,18 @@ public:
     Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(), Int64Range r = Int64Range(INT64_MIN, INT64_MAX))
         : Option(n, d, c, "<int64>"), range(r), value(def) {}
 
-    operator     int64_t   (void) const
-    {
+    operator     int64_t   (void) const {
         return value;
     }
-    operator     int64_t&  (void)
-    {
+    operator     int64_t&  (void) {
         return value;
     }
-    Int64Option& operator= (int64_t x)
-    {
+    Int64Option& operator= (int64_t x) {
         value = x;
         return *this;
     }
 
-    virtual bool parse(const char* str)
-    {
+    virtual bool parse(const char* str) {
         const char* span = str;
 
         if (!match(span, "-") || !match(span, name) || !match(span, "=")) {
@@ -330,8 +310,7 @@ public:
         return true;
     }
 
-    virtual void help (bool verbose = false)
-    {
+    virtual void help (bool verbose = false) {
         fprintf(stderr, "  -%-12s = %-8s [", name, type_name);
         if (range.begin == INT64_MIN) {
             fprintf(stderr, "imin");
@@ -365,22 +344,18 @@ public:
     StringOption(const char* c, const char* n, const char* d, const char* def = NULL)
         : Option(n, d, c, "<string>"), value(def) {}
 
-    operator      const char*  (void) const
-    {
+    operator      const char*  (void) const {
         return value;
     }
-    operator      const char*& (void)
-    {
+    operator      const char*& (void) {
         return value;
     }
-    StringOption& operator=    (const char* x)
-    {
+    StringOption& operator=    (const char* x) {
         value = x;
         return *this;
     }
 
-    virtual bool parse(const char* str)
-    {
+    virtual bool parse(const char* str) {
         const char* span = str;
 
         if (!match(span, "-") || !match(span, name) || !match(span, "=")) {
@@ -391,8 +366,7 @@ public:
         return true;
     }
 
-    virtual void help (bool verbose = false)
-    {
+    virtual void help (bool verbose = false) {
         fprintf(stderr, "  -%-10s = %8s\n", name, type_name);
         if (verbose) {
             fprintf(stderr, "\n        %s\n", description);
@@ -413,22 +387,18 @@ public:
     BoolOption(const char* c, const char* n, const char* d, bool v)
         : Option(n, d, c, "<bool>"), value(v) {}
 
-    operator    bool     (void) const
-    {
+    operator    bool     (void) const {
         return value;
     }
-    operator    bool&    (void)
-    {
+    operator    bool&    (void) {
         return value;
     }
-    BoolOption& operator=(bool b)
-    {
+    BoolOption& operator=(bool b) {
         value = b;
         return *this;
     }
 
-    virtual bool parse(const char* str)
-    {
+    virtual bool parse(const char* str) {
         const char* span = str;
 
         if (match(span, "-")) {
@@ -443,8 +413,7 @@ public:
         return false;
     }
 
-    virtual void help (bool verbose = false)
-    {
+    virtual void help (bool verbose = false) {
 
         fprintf(stderr, "  -%s, -no-%s", name, name);
 

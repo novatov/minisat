@@ -54,59 +54,48 @@ struct Lit {
     // Use this as a constructor:
     friend Lit mkLit(Var var, bool sign);
 
-    bool operator == (Lit p) const
-    {
+    bool operator == (Lit p) const {
         return x == p.x;
     }
-    bool operator != (Lit p) const
-    {
+    bool operator != (Lit p) const {
         return x != p.x;
     }
-    bool operator <  (Lit p) const
-    {
+    bool operator <  (Lit p) const {
         return x < p.x;     // '<' makes p, ~p adjacent in the ordering.
     }
 };
 
 
-inline  Lit  mkLit     (Var var, bool sign = false)
-{
+inline  Lit  mkLit     (Var var, bool sign = false) {
     Lit p;
     p.x = var + var + (int)sign;
     return p;
 }
-inline  Lit  operator ~(Lit p)
-{
+inline  Lit  operator ~(Lit p) {
     Lit q;
     q.x = p.x ^ 1;
     return q;
 }
-inline  Lit  operator ^(Lit p, bool b)
-{
+inline  Lit  operator ^(Lit p, bool b) {
     Lit q;
     q.x = p.x ^ (unsigned int)b;
     return q;
 }
-inline  bool sign      (Lit p)
-{
+inline  bool sign      (Lit p) {
     return p.x & 1;
 }
-inline  int  var       (Lit p)
-{
+inline  int  var       (Lit p) {
     return p.x >> 1;
 }
 
 // Mapping Literals to and from compact integers suitable for array indexing:
-inline  int  toInt     (Var v)
-{
+inline  int  toInt     (Var v) {
     return v;
 }
-inline  int  toInt     (Lit p)
-{
+inline  int  toInt     (Lit p) {
     return p.x;
 }
-inline  Lit  toLit     (int i)
-{
+inline  Lit  toLit     (int i) {
     Lit p;
     p.x = i;
     return p;
@@ -119,8 +108,7 @@ const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
 
 struct MkIndexLit {
-    vec<Lit>::Size operator()(Lit l) const
-    {
+    vec<Lit>::Size operator()(Lit l) const {
         return vec<Lit>::Size(l.x);
     }
 };
@@ -146,28 +134,23 @@ public:
     lbool()       : value(0) { }
     explicit lbool(bool x) : value(!x) { }
 
-    bool  operator == (lbool b) const
-    {
+    bool  operator == (lbool b) const {
         return ((b.value&2) & (value&2)) | (!(b.value&2)&(value == b.value));
     }
-    bool  operator != (lbool b) const
-    {
+    bool  operator != (lbool b) const {
         return !(*this == b);
     }
-    lbool operator ^  (bool  b) const
-    {
+    lbool operator ^  (bool  b) const {
         return lbool((uint8_t)(value^(uint8_t)b));
     }
 
-    lbool operator && (lbool b) const
-    {
+    lbool operator && (lbool b) const {
         uint8_t sel = (this->value << 1) | (b.value << 3);
         uint8_t v   = (0xF7F755F4 >> sel) & 3;
         return lbool(v);
     }
 
-    lbool operator || (lbool b) const
-    {
+    lbool operator || (lbool b) const {
         uint8_t sel = (this->value << 1) | (b.value << 3);
         uint8_t v   = (0xFCFCF400 >> sel) & 3;
         return lbool(v);
@@ -176,12 +159,10 @@ public:
     friend int   toInt  (lbool l);
     friend lbool toLbool(int   v);
 };
-inline int   toInt  (lbool l)
-{
+inline int   toInt  (lbool l) {
     return l.value;
 }
-inline lbool toLbool(int   v)
-{
+inline lbool toLbool(int   v) {
     return lbool((uint8_t)v);
 }
 
@@ -220,8 +201,7 @@ class Clause {
     friend class ClauseAllocator;
 
     // NOTE: This constructor cannot be used directly (doesn't allocate enough memory).
-    Clause(const vec<Lit>& ps, bool use_extra, bool learnt)
-    {
+    Clause(const vec<Lit>& ps, bool use_extra, bool learnt) {
         header.mark      = 0;
         header.learnt    = learnt;
         header.has_extra = use_extra;
@@ -242,8 +222,7 @@ class Clause {
     }
 
     // NOTE: This constructor cannot be used directly (doesn't allocate enough memory).
-    Clause(const Clause& from, bool use_extra)
-    {
+    Clause(const Clause& from, bool use_extra) {
         header           = from.header;
         header.has_extra = use_extra;   // NOTE: the copied clause may lose the extra field.
 
@@ -261,8 +240,7 @@ class Clause {
     }
 
 public:
-    void calcAbstraction()
-    {
+    void calcAbstraction() {
         assert(header.has_extra);
         uint32_t abstraction = 0;
         for (int i = 0; i < size(); i++) {
@@ -272,79 +250,63 @@ public:
     }
 
 
-    int          size        ()      const
-    {
+    int          size        ()      const {
         return header.size;
     }
-    void         shrink      (int i)
-    {
+    void         shrink      (int i) {
         assert(i <= size());
         if (header.has_extra) {
             data[header.size-i] = data[header.size];
         }
         header.size -= i;
     }
-    void         pop         ()
-    {
+    void         pop         () {
         shrink(1);
     }
-    bool         learnt      ()      const
-    {
+    bool         learnt      ()      const {
         return header.learnt;
     }
-    bool         has_extra   ()      const
-    {
+    bool         has_extra   ()      const {
         return header.has_extra;
     }
-    uint32_t     mark        ()      const
-    {
+    uint32_t     mark        ()      const {
         return header.mark;
     }
-    void         mark        (uint32_t m)
-    {
+    void         mark        (uint32_t m) {
         header.mark = m;
     }
-    const Lit&   last        ()      const
-    {
+    const Lit&   last        ()      const {
         return data[header.size-1].lit;
     }
 
-    bool         reloced     ()      const
-    {
+    bool         reloced     ()      const {
         return header.reloced;
     }
-    CRef         relocation  ()      const
-    {
+    CRef         relocation  ()      const {
         return data[0].rel;
     }
-    void         relocate    (CRef c)
-    {
+    void         relocate    (CRef c) {
         header.reloced = 1;
         data[0].rel = c;
     }
 
     // NOTE: somewhat unsafe to change the clause in-place! Must manually call 'calcAbstraction' afterwards for
     //       subsumption operations to behave correctly.
-    Lit&         operator [] (int i)
-    {
+    Lit&         operator [] (int i) {
         return data[i].lit;
     }
-    Lit          operator [] (int i) const
-    {
+    Lit          operator [] (int i) const {
         return data[i].lit;
     }
-    operator const Lit* (void) const
-    {
+    operator const Lit* (void) const {
         return (Lit*)data;
     }
 
-    float&       activity    ()
-    {
+    float&       activity    () {
         assert(header.has_extra);
         return data[header.size].act;
     }
-    uint32_t     abstraction () const
-    {
+    uint32_t     abstraction () const {
         assert(header.has_extra);
         return data[header.size].abs;
     }
@@ -361,8 +323,7 @@ const CRef CRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
 class ClauseAllocator {
     RegionAllocator<uint32_t> ra;
 
-    static uint32_t clauseWord32Size(int size, bool has_extra)
-    {
+    static uint32_t clauseWord32Size(int size, bool has_extra) {
         return (sizeof(Clause) + (sizeof(Lit) * (size + (int)has_extra))) / sizeof(uint32_t);
     }
 
@@ -374,14 +335,12 @@ public:
     ClauseAllocator(uint32_t start_cap) : ra(start_cap), extra_clause_field(false) {}
     ClauseAllocator() : extra_clause_field(false) {}
 
-    void moveTo(ClauseAllocator& to)
-    {
+    void moveTo(ClauseAllocator& to) {
         to.extra_clause_field = extra_clause_field;
         ra.moveTo(to.ra);
     }
 
-    CRef alloc(const vec<Lit>& ps, bool learnt = false)
-    {
+    CRef alloc(const vec<Lit>& ps, bool learnt = false) {
         assert(sizeof(Lit)      == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
         bool use_extra = learnt | extra_clause_field;
@@ -391,53 +350,43 @@ public:
         return cid;
     }
 
-    CRef alloc(const Clause& from)
-    {
+    CRef alloc(const Clause& from) {
         bool use_extra = from.learnt() | extra_clause_field;
         CRef cid       = ra.alloc(clauseWord32Size(from.size(), use_extra));
         new (lea(cid)) Clause(from, use_extra);
         return cid;
     }
 
-    uint32_t size      () const
-    {
+    uint32_t size      () const {
         return ra.size();
     }
-    uint32_t wasted    () const
-    {
+    uint32_t wasted    () const {
         return ra.wasted();
     }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    Clause&       operator[](CRef r)
-    {
+    Clause&       operator[](CRef r) {
         return (Clause&)ra[r];
     }
-    const Clause& operator[](CRef r) const
-    {
+    const Clause& operator[](CRef r) const {
         return (Clause&)ra[r];
     }
-    Clause*       lea       (CRef r)
-    {
+    Clause*       lea       (CRef r) {
         return (Clause*)ra.lea(r);
     }
-    const Clause* lea       (CRef r) const
-    {
+    const Clause* lea       (CRef r) const {
         return (Clause*)ra.lea(r);;
     }
-    CRef          ael       (const Clause* t)
-    {
+    CRef          ael       (const Clause* t) {
         return ra.ael((uint32_t*)t);
     }
 
-    void free(CRef cid)
-    {
+    void free(CRef cid) {
         Clause& c = operator[](cid);
         ra.free(clauseWord32Size(c.size(), c.has_extra()));
     }
 
-    void reloc(CRef& cr, ClauseAllocator& to)
-    {
+    void reloc(CRef& cr, ClauseAllocator& to) {
         Clause& c = operator[](cr);
 
         if (c.reloced()) {
@@ -459,22 +408,18 @@ class ClauseIterator {
 public:
     ClauseIterator(const ClauseAllocator& _ca, const CRef* _crefs) : ca(_ca), crefs(_crefs) {}
 
-    void operator++()
-    {
+    void operator++() {
         crefs++;
     }
-    const Clause& operator*() const
-    {
+    const Clause& operator*() const {
         return ca[*crefs];
     }
 
     // NOTE: does not compare that references use the same clause-allocator:
-    bool operator==(const ClauseIterator& ci) const
-    {
+    bool operator==(const ClauseIterator& ci) const {
         return crefs == ci.crefs;
     }
-    bool operator!=(const ClauseIterator& ci) const
-    {
+    bool operator!=(const ClauseIterator& ci) const {
         return crefs != ci.crefs;
     }
 };
@@ -485,21 +430,17 @@ class TrailIterator {
 public:
     TrailIterator(const Lit* _lits) : lits(_lits) {}
 
-    void operator++()
-    {
+    void operator++() {
         lits++;
     }
-    Lit  operator*() const
-    {
+    Lit  operator*() const {
         return *lits;
     }
 
-    bool operator==(const TrailIterator& ti) const
-    {
+    bool operator==(const TrailIterator& ti) const {
         return lits == ti.lits;
     }
-    bool operator!=(const TrailIterator& ti) const
-    {
+    bool operator!=(const TrailIterator& ti) const {
         return lits != ti.lits;
     }
 };
@@ -521,18 +462,15 @@ public:
         dirty(_index),
         deleted(d) {}
 
-    void  init      (const K& idx)
-    {
+    void  init      (const K& idx) {
         occs.reserve(idx);
         occs[idx].clear();
         dirty.reserve(idx, 0);
     }
-    Vec&  operator[](const K& idx)
-    {
+    Vec&  operator[](const K& idx) {
         return occs[idx];
     }
-    Vec&  lookup    (const K& idx)
-    {
+    Vec&  lookup    (const K& idx) {
         if (dirty[idx]) {
             clean(idx);
         }
@@ -541,16 +479,14 @@ public:
 
     void  cleanAll  ();
     void  clean     (const K& idx);
-    void  smudge    (const K& idx)
-    {
+    void  smudge    (const K& idx) {
         if (dirty[idx] == 0) {
             dirty[idx] = 1;
             dirties.push(idx);
         }
     }
 
-    void  clear(bool free = true)
-    {
+    void  clear(bool free = true) {
         occs   .clear(free);
         dirty  .clear(free);
         dirties.clear(free);
@@ -559,8 +495,7 @@ public:
 
 
 template<class K, class Vec, class Deleted, class MkIndex>
-void OccLists<K,Vec,Deleted,MkIndex>::cleanAll()
-{
+void OccLists<K,Vec,Deleted,MkIndex>::cleanAll() {
     for (int i = 0; i < dirties.size(); i++)
         // Dirties may contain duplicates so check here if a variable is already cleaned:
         if (dirty[dirties[i]]) {
@@ -571,8 +506,7 @@ void OccLists<K,Vec,Deleted,MkIndex>::cleanAll()
 
 
 template<class K, class Vec, class Deleted, class MkIndex>
-void OccLists<K,Vec,Deleted,MkIndex>::clean(const K& idx)
-{
+void OccLists<K,Vec,Deleted,MkIndex>::clean(const K& idx) {
     Vec& vec = occs[idx];
     int  i, j;
     for (i = j = 0; i < vec.size(); i++)
@@ -591,8 +525,7 @@ void OccLists<K,Vec,Deleted,MkIndex>::clean(const K& idx)
 template<class T>
 class CMap {
     struct CRefHash {
-        uint32_t operator()(CRef cr) const
-        {
+        uint32_t operator()(CRef cr) const {
             return (uint32_t)cr;
         }
     };
@@ -602,63 +535,51 @@ class CMap {
 
 public:
     // Size-operations:
-    void     clear       ()
-    {
+    void     clear       () {
         map.clear();
     }
-    int      size        ()                const
-    {
+    int      size        ()                const {
         return map.elems();
     }
 
 
     // Insert/Remove/Test mapping:
-    void     insert      (CRef cr, const T& t)
-    {
+    void     insert      (CRef cr, const T& t) {
         map.insert(cr, t);
     }
-    void     growTo      (CRef cr, const T& t)
-    {
+    void     growTo      (CRef cr, const T& t) {
         map.insert(cr, t);    // NOTE: for compatibility
     }
-    void     remove      (CRef cr)
-    {
+    void     remove      (CRef cr) {
         map.remove(cr);
     }
-    bool     has         (CRef cr, T& t)
-    {
+    bool     has         (CRef cr, T& t) {
         return map.peek(cr, t);
     }
 
     // Vector interface (the clause 'c' must already exist):
-    const T& operator [] (CRef cr) const
-    {
+    const T& operator [] (CRef cr) const {
         return map[cr];
     }
-    T&       operator [] (CRef cr)
-    {
+    T&       operator [] (CRef cr) {
         return map[cr];
     }
 
     // Iteration (not transparent at all at the moment):
-    int  bucket_count() const
-    {
+    int  bucket_count() const {
         return map.bucket_count();
     }
-    const vec<typename HashTable::Pair>& bucket(int i) const
-    {
+    const vec<typename HashTable::Pair>& bucket(int i) const {
         return map.bucket(i);
     }
 
     // Move contents to other map:
-    void moveTo(CMap& other)
-    {
+    void moveTo(CMap& other) {
         map.moveTo(other.map);
     }
 
     // TMP debug:
-    void debug()
-    {
+    void debug() {
         printf(" --- size = %d, bucket_count = %d\n", size(), map.bucket_count());
     }
 };
@@ -677,8 +598,7 @@ public:
 |       lit_Undef  - Clause subsumes 'other'
 |       p          - The literal p can be deleted from 'other'
 |________________________________________________________________________________________________@*/
-inline Lit Clause::subsumes(const Clause& other) const
-{
+inline Lit Clause::subsumes(const Clause& other) const {
     //if (other.size() < size() || (extra.abst & ~other.extra.abst) != 0)
     //if (other.size() < size() || (!learnt() && !other.learnt() && (extra.abst & ~other.extra.abst) != 0))
     assert(!header.learnt);
@@ -712,8 +632,7 @@ ok:
     return ret;
 }
 
-inline void Clause::strengthen(Lit p)
-{
+inline void Clause::strengthen(Lit p) {
     remove(*this, p);
     calcAbstraction();
 }

@@ -31,16 +31,14 @@ namespace Minisat {
 
 template<class T>
 struct LessThan_default {
-    bool operator () (T x, T y)
-    {
+    bool operator () (T x, T y) {
         return x < y;
     }
 };
 
 
 template <class T, class LessThan>
-void selectionSort(T* array, int size, LessThan lt)
-{
+void selectionSort(T* array, int size, LessThan lt) {
     int     i, j, best_i;
     T       tmp;
 
@@ -56,14 +54,12 @@ void selectionSort(T* array, int size, LessThan lt)
         array[best_i] = tmp;
     }
 }
-template <class T> static inline void selectionSort(T* array, int size)
-{
+template <class T> static inline void selectionSort(T* array, int size) {
     selectionSort(array, size, LessThan_default<T>());
 }
 
 template <class T, class LessThan>
-void sort(T* array, int size, LessThan lt)
-{
+void sort(T* array, int size, LessThan lt) {
     if (size <= 15) {
         selectionSort(array, size, lt);
     }
@@ -91,12 +87,11 @@ void sort(T* array, int size, LessThan lt)
             array[j] = tmp;
         }
 
-        sort(array    , i     , lt);
+        sort(array, i, lt);
         sort(&array[i], size-i, lt);
     }
 }
-template <class T> static inline void sort(T* array, int size)
-{
+template <class T> static inline void sort(T* array, int size) {
     sort(array, size, LessThan_default<T>());
 }
 
@@ -105,12 +100,10 @@ template <class T> static inline void sort(T* array, int size)
 // For 'vec's:
 
 
-template <class T, class LessThan> void sort(vec<T>& v, LessThan lt)
-{
+template <class T, class LessThan> void sort(vec<T>& v, LessThan lt) {
     sort((T*)v, v.size(), lt);
 }
-template <class T> void sort(vec<T>& v)
-{
+template <class T> void sort(vec<T>& v) {
     sort(v, LessThan_default<T>());
 }
 

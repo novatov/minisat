@@ -44,63 +44,52 @@ public:
     enum { Ref_Undef = UINT32_MAX };
     enum { Unit_Size = sizeof(T) };
 
-    explicit RegionAllocator(uint32_t start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0)
-    {
+    explicit RegionAllocator(uint32_t start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0) {
         capacity(start_cap);
     }
-    ~RegionAllocator()
-    {
+    ~RegionAllocator() {
         if (memory != NULL) {
             ::free(memory);
         }
     }
 
 
-    uint32_t size      () const
-    {
+    uint32_t size      () const {
         return sz;
     }
-    uint32_t wasted    () const
-    {
+    uint32_t wasted    () const {
         return wasted_;
     }
 
     Ref      alloc     (int size);
-    void     free      (int size)
-    {
+    void     free      (int size) {
         wasted_ += size;
     }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    T&       operator[](Ref r)
-    {
+    T&       operator[](Ref r) {
         assert(r < sz);
         return memory[r];
     }
-    const T& operator[](Ref r) const
-    {
+    const T& operator[](Ref r) const {
         assert(r < sz);
         return memory[r];
     }
 
-    T*       lea       (Ref r)
-    {
+    T*       lea       (Ref r) {
         assert(r < sz);
         return &memory[r];
     }
-    const T* lea       (Ref r) const
-    {
+    const T* lea       (Ref r) const {
         assert(r < sz);
         return &memory[r];
     }
-    Ref      ael       (const T* t)
-    {
+    Ref      ael       (const T* t) {
         assert((void*)t >= (void*)&memory[0] && (void*)t < (void*)&memory[sz-1]);
         return  (Ref)(t - &memory[0]);
     }
 
-    void     moveTo(RegionAllocator& to)
-    {
+    void     moveTo(RegionAllocator& to) {
         if (to.memory != NULL) {
             ::free(to.memory);
         }
@@ -117,8 +106,7 @@ public:
 };
 
 template<class T>
-void RegionAllocator<T>::capacity(uint32_t min_cap)
-{
+void RegionAllocator<T>::capacity(uint32_t min_cap) {
     if (cap >= min_cap) {
         return;
     }
@@ -145,8 +133,7 @@ void RegionAllocator<T>::capacity(uint32_t min_cap)
 
 template<class T>
 typename RegionAllocator<T>::Ref
-RegionAllocator<T>::alloc(int size)
-{
+RegionAllocator<T>::alloc(int size) {
     // printf("ALLOC called (this = %p, size = %d)\n", this, size); fflush(stdout);
     assert(size > 0);
     capacity(sz + size);

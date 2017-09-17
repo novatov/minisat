@@ -38,45 +38,38 @@ public:
 
     Queue() : buf(1), first(0), end(0) {}
 
-    void clear (bool dealloc = false)
-    {
+    void clear (bool dealloc = false) {
         buf.clear(dealloc);
         buf.growTo(1);
         first = end = 0;
     }
-    int  size  () const
-    {
+    int  size  () const {
         return (end >= first) ? end - first : end - first + buf.size();
     }
 
-    const T& operator [] (int index) const
-    {
+    const T& operator [] (int index) const {
         assert(index >= 0);
         assert(index < size());
         return buf[(first + index) % buf.size()];
     }
-    T&       operator [] (int index)
-    {
+    T&       operator [] (int index) {
         assert(index >= 0);
         assert(index < size());
         return buf[(first + index) % buf.size()];
     }
 
-    T    peek  () const
-    {
+    T    peek  () const {
         assert(first != end);
         return buf[first];
     }
-    void pop   ()
-    {
+    void pop   () {
         assert(first != end);
         first++;
         if (first == buf.size()) {
             first = 0;
         }
     }
-    void insert(T elem)     // INVARIANT: buf[end] is always unused
-    {
+    void insert(T elem) {   // INVARIANT: buf[end] is always unused
         buf[end++] = elem;
         if (end == buf.size()) {
             end = 0;
