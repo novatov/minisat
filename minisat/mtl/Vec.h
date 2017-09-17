@@ -22,11 +22,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Minisat_Vec_h
 
 #include <assert.h>
-#include <limits>
 #include <new>
 
-#include "minisat/mtl/IntTypes.h"
-#include "minisat/mtl/XAlloc.h"
+#include "mtl/IntTypes.h"
+#include "mtl/XAlloc.h"
 
 namespace Minisat {
 
@@ -35,30 +34,38 @@ namespace Minisat {
 //
 // NOTE! Don't use this vector on datatypes that cannot be re-located in memory (with realloc)
 
-template<class T, class _Size = int>
+template<class T>
 class vec {
-public:
-    typedef _Size Size;
-private:
-    T*   data;
-    Size sz;
-    Size cap;
+    T*  data;
+    int sz;
+    int cap;
 
     // Don't allow copying (error prone):
-    vec<T>&  operator=(vec<T>& other);
-    vec      (vec<T>& other);
+    vec<T>&  operator = (vec<T>& other) {
+        assert(0);
+        return *this;
+    }
+    vec        (vec<T>& other) {
+        assert(0);
+    }
 
-    static inline Size max(Size x, Size y) {
-        return (x > y) ? x : y;
+    // Helpers for calculating next capacity:
+    static inline int  imax   (int x, int y) {
+        int mask = (y-x) >> (sizeof(int)*8-1);
+        return (x&mask) + (y&(~mask));
+    }
+    //static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
+    static inline void nextCap(int& cap) {
+        cap += ((cap >> 1) + 2) & ~1;
     }
 
 public:
     // Constructors:
-    vec()                        : data(NULL), sz(0), cap(0)    { }
-    explicit vec(Size size)      : data(NULL), sz(0), cap(0) {
+    vec()                       : data(NULL), sz(0), cap(0)    { }
+    explicit vec(int size)      : data(NULL), sz(0), cap(0) {
         growTo(size);
     }
-    vec(Size size, const T& pad) : data(NULL), sz(0), cap(0) {
+    vec(int size, const T& pad) : data(NULL), sz(0), cap(0) {
         growTo(size, pad);
     }
     ~vec() {
@@ -71,25 +78,25 @@ public:
     }
 
     // Size operations:
-    Size     size     (void) const {
+    int      size     (void) const {
         return sz;
     }
-    void     shrink   (Size nelems) {
+    void     shrink   (int nelems) {
         assert(nelems <= sz);
-        for (Size i = 0; i < nelems; i++) {
+        for (int i = 0; i < nelems; i++) {
             sz--, data[sz].~T();
         }
     }
-    void     shrink_  (Size nelems) {
+    void     shrink_  (int nelems) {
         assert(nelems <= sz);
         sz -= nelems;
     }
     int      capacity (void) const {
         return cap;
     }
-    void     capacity (Size min_cap);
-    void     growTo   (Size size);
-    void     growTo   (Size size, const T& pad);
+    void     capacity (int min_cap);
+    void     growTo   (int size);
+    void     growTo   (int size, const T& pad);
     void     clear    (bool dealloc = false);
 
     // Stack interface:
@@ -100,12 +107,11 @@ public:
         new (&data[sz]) T();
         sz++;
     }
-    //void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); data[sz++] = elem; }
     void     push  (const T& elem) {
         if (sz == cap) {
             capacity(sz+1);
         }
-        new (&data[sz++]) T(elem);
+        data[sz++] = elem;
     }
     void     push_ (const T& elem) {
         assert(sz < cap);
@@ -128,10 +134,10 @@ public:
     }
 
     // Vector interface:
-    const T& operator [] (Size index) const {
+    const T& operator [] (int index) const {
         return data[index];
     }
-    T&       operator [] (Size index) {
+    T&       operator [] (int index) {
         return data[index];
     }
 
@@ -139,7 +145,7 @@ public:
     void copyTo(vec<T>& copy) const {
         copy.clear();
         copy.growTo(sz);
-        for (Size i = 0; i < sz; i++) {
+        for (int i = 0; i < sz; i++) {
             copy[i] = data[i];
         }
     }
@@ -155,50 +161,48 @@ public:
 };
 
 
-template<class T, class _Size>
-void vec<T,_Size>::capacity(Size min_cap) {
+template<class T>
+void vec<T>::capacity(int min_cap) {
     if (cap >= min_cap) {
         return;
     }
-    Size add = max((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
-    const Size size_max = std::numeric_limits<Size>::max();
-    if ( ((size_max <= std::numeric_limits<int>::max()) && (add > size_max - cap))
-            ||   (((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM) ) {
+    int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
+    if (add > INT_MAX - cap || ((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM) {
         throw OutOfMemoryException();
     }
 }
 
 
-template<class T, class _Size>
-void vec<T,_Size>::growTo(Size size, const T& pad) {
+template<class T>
+void vec<T>::growTo(int size, const T& pad) {
     if (sz >= size) {
         return;
     }
     capacity(size);
-    for (Size i = sz; i < size; i++) {
+    for (int i = sz; i < size; i++) {
         data[i] = pad;
     }
     sz = size;
 }
 
 
-template<class T, class _Size>
-void vec<T,_Size>::growTo(Size size) {
+template<class T>
+void vec<T>::growTo(int size) {
     if (sz >= size) {
         return;
     }
     capacity(size);
-    for (Size i = sz; i < size; i++) {
+    for (int i = sz; i < size; i++) {
         new (&data[i]) T();
     }
     sz = size;
 }
 
 
-template<class T, class _Size>
-void vec<T,_Size>::clear(bool dealloc) {
+template<class T>
+void vec<T>::clear(bool dealloc) {
     if (data != NULL) {
-        for (Size i = 0; i < sz; i++) {
+        for (int i = 0; i < sz; i++) {
             data[i].~T();
         }
         sz = 0;

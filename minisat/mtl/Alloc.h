@@ -21,8 +21,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_Alloc_h
 #define Minisat_Alloc_h
 
-#include "minisat/mtl/XAlloc.h"
-#include "minisat/mtl/Vec.h"
+#include "mtl/XAlloc.h"
+#include "mtl/Vec.h"
 
 namespace Minisat {
 
@@ -42,7 +42,7 @@ public:
     // TODO: make this a class for better type-checking?
     typedef uint32_t Ref;
     enum { Ref_Undef = UINT32_MAX };
-    enum { Unit_Size = sizeof(T) };
+    enum { Unit_Size = sizeof(uint32_t) };
 
     explicit RegionAllocator(uint32_t start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0) {
         capacity(start_cap);
@@ -68,20 +68,20 @@ public:
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
     T&       operator[](Ref r) {
-        assert(r < sz);
+        assert(r >= 0 && r < sz);
         return memory[r];
     }
     const T& operator[](Ref r) const {
-        assert(r < sz);
+        assert(r >= 0 && r < sz);
         return memory[r];
     }
 
     T*       lea       (Ref r) {
-        assert(r < sz);
+        assert(r >= 0 && r < sz);
         return &memory[r];
     }
     const T* lea       (Ref r) const {
-        assert(r < sz);
+        assert(r >= 0 && r < sz);
         return &memory[r];
     }
     Ref      ael       (const T* t) {
