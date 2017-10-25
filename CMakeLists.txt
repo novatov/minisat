@@ -1,6 +1,11 @@
-cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
 
 project(minisat)
+
+if(POLICY CMP0048)
+    #policy for VERSION in cmake 3.0
+    cmake_policy(SET CMP0048 OLD)
+endif()
 
 #--------------------------------------------------------------------------------------------------
 # Configurable options:
@@ -28,7 +33,7 @@ set(MINISAT_SOVERSION ${MINISAT_SOMAJOR})
 
 find_package(ZLIB)
 include_directories(${ZLIB_INCLUDE_DIR})
-include_directories(${minisat_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR})
 
 #--------------------------------------------------------------------------------------------------
 # Compile flags:
@@ -64,20 +69,9 @@ endif()
 set_target_properties(minisat-lib-static PROPERTIES OUTPUT_NAME "minisat")
 set_target_properties(minisat-lib-shared
   PROPERTIES
-    OUTPUT_NAME "minisat" 
+    OUTPUT_NAME "minisat"
     VERSION ${MINISAT_VERSION}
     SOVERSION ${MINISAT_SOVERSION})
 
 set_target_properties(minisat_simp       PROPERTIES OUTPUT_NAME "minisat")
 
-#--------------------------------------------------------------------------------------------------
-# Installation targets:
-
-install(TARGETS minisat-lib-static minisat-lib-shared minisat_core minisat_simp 
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-
-install(DIRECTORY minisat/mtl minisat/utils minisat/core minisat/simp
-        DESTINATION include/minisat
-        FILES_MATCHING PATTERN "*.h")
