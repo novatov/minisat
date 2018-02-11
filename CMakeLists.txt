@@ -2,11 +2,28 @@ cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
 project(maple_lcm_dist)
 
+# generate JSON file of compile commands -- useful for code extension
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 #--------------------------------------------------------------------------------------------------
 # Configurable options:
 
 option(STATIC_BINARIES "Link binaries statically." ON)
 option(USE_SORELEASE   "Use SORELEASE in shared library filename." ON)
+
+add_compile_options( -g)
+add_compile_options( -pthread )
+
+add_compile_options("$<$<CONFIG:RELWITHDEBINFO>:-O3>")
+add_compile_options("$<$<CONFIG:RELWITHDEBINFO>:-mtune=native>")
+
+add_compile_options("$<$<CONFIG:RELEASE>:-O3>")
+add_compile_options("$<$<CONFIG:RELEASE>:-g0>")
+add_compile_options("$<$<CONFIG:RELEASE>:-DNDEBUG>")
+add_compile_options("$<$<CONFIG:RELEASE>:-mtune=native>")
+
+add_compile_options("$<$<CONFIG:DEBUG>:-O0>")
+
 
 #--------------------------------------------------------------------------------------------------
 # Library version:
