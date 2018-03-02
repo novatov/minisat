@@ -1766,10 +1766,19 @@ lbool Solver::search(int& nof_conflicts) {
             }
             claDecayActivity();
             if (verbosity >= 1 && ((conflicts & 0xfff) == (conflicts & 0x000)))
-                    printf("c | %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+                    printf("c | %9d %1d | %7d %8d %8d | %8d %8d %8d %8d %6.0f |\n",
                            (int)conflicts,
-                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
-                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+                           (int)VSIDS,
+
+                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
+                           nClauses(),
+                           (int)clauses_literals,
+
+                           (int)max_learnts,
+                           learnts_core.size(),
+                           learnts_tier2.size(),
+                           learnts_local.size(),
+                           (double)learnts_literals/nLearnts());
 
             /*if (--learntsize_adjust_cnt == 0){
                 learntsize_adjust_confl *= learntsize_adjust_inc;
@@ -1912,10 +1921,10 @@ lbool Solver::solve_() {
     lbool   status            = l_Undef;
 
     if (verbosity >= 1) {
-        printf("c ============================[ Search Statistics ]==============================\n");
-        printf("c | Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
-        printf("c |           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
-        printf("c ===============================================================================\n");
+        printf("c ============================[ Search Statistics ]========================================\n");
+        printf("c | Conflicts V |          ORIGINAL         |          LEARNT                               |\n");
+        printf("c |             |    Vars  Clauses Literals |    Limit    core     tier2    local    Lit/Cl |\n");
+        printf("c =========================================================================================\n");
     }
 
     add_tmp.clear();
