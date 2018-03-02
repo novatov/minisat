@@ -459,7 +459,6 @@ protected:
 public:
     bool    simplifyAll();
     void    simplifyLearnt(Clause& c);
-    bool    simplifyLearnt_x(vec<CRef>& learnts_x);
     bool    simplifyLearnt_core();
     bool    simplifyLearnt_tier2();
     int     trailRecord;
