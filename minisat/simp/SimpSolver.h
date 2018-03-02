@@ -139,6 +139,10 @@ protected:
         }
     };
 
+    unsigned get_num_long_cls() const;
+    unsigned get_num_bin_cls() const;
+    unsigned get_num_long_cls_lits() const;
+
     // Solver state:
     //
     int                 elimorder;

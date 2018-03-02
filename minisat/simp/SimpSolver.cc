@@ -29,8 +29,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Sort.h"
 #include "simp/SimpSolver.h"
 #include "utils/System.h"
+#include <iostream>
+using std::cout;
+using std::endl;
 
 using namespace Minisat;
+
+//#define DEBUG_VARELIM
 
 //=================================================================================================
 // Options:
@@ -667,6 +672,39 @@ void SimpSolver::removeSatisfied() {
     clauses.shrink(i - j);
 }
 
+unsigned SimpSolver::get_num_long_cls() const
+{
+    unsigned sum = 0;
+    for (unsigned i = 0; i < clauses.size(); i++) {
+        const Clause& c = ca[clauses[i]];
+        if (c.size() > 2 && c.mark() == 0)
+            sum++;
+    }
+    return sum;
+}
+
+unsigned SimpSolver::get_num_bin_cls() const
+{
+    unsigned sum = 0;
+    for (unsigned i = 0; i < clauses.size(); i++) {
+        const Clause& c = ca[clauses[i]];
+        if (c.size() == 2  && c.mark() == 0)
+            sum++;
+    }
+    return sum;
+}
+
+unsigned SimpSolver::get_num_long_cls_lits() const
+{
+    unsigned sum = 0;
+    for (unsigned i = 0; i < clauses.size(); i++) {
+        const Clause& c = ca[clauses[i]];
+        if (c.size() > 2 && c.mark() == 0)
+            sum+=c.size();
+    }
+    return sum;
+}
+
 // The technique and code are by the courtesy of the GlueMiniSat team. Thank you!
 // It helps solving certain types of huge problems tremendously.
 bool SimpSolver::eliminate(bool turn_off_elim) {
@@ -683,6 +721,14 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
         removeSatisfied();
     }
     n_cls_init = nClauses();
+
+    cout << "c x clause_lim   : " << clause_lim << endl;
+    cout << "c x n vars       : " << nFreeVars() << endl;
+    #ifdef DEBUG_VARELIM
+    cout << "c x cls long     : " << get_num_long_cls() << endl;
+    cout << "c x cls bin      : " << get_num_bin_cls() << endl;
+    cout << "c x long cls lits: " << get_num_long_cls_lits() << endl;
+    #endif
 
     res = eliminate_(); // The first, usual variable elimination of MiniSat.
     if (!res) {
@@ -701,6 +747,12 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 
     grow = grow ? grow * 2 : 8;
     for (; grow < 10000; grow *= 2) {
+        cout << "c x n vars       : " << nFreeVars() << endl;
+        #ifdef DEBUG_VARELIM
+        cout << "c x cls long     : " << get_num_long_cls() << endl;
+        cout << "c x cls bin      : " << get_num_bin_cls() << endl;
+        cout << "c x long cls lits: " << get_num_long_cls_lits() << endl;
+        #endif
         // Rebuild elimination variable heap.
         for (int i = 0; i < clauses.size(); i++) {
             const Clause& c = ca[clauses[i]];
@@ -734,6 +786,13 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
             break;
         }
     }
+
+    cout << "c x n vars       : " << nFreeVars() << endl;
+    #ifdef DEBUG_VARELIM
+    cout << "c x cls long     : " << get_num_long_cls() << endl;
+    cout << "c x cls bin      : " << get_num_bin_cls() << endl;
+    cout << "c x long cls lits: " << get_num_long_cls_lits() << endl;
+    #endif
     printf("c No. effective iterative eliminations: %d\n", iter);
 
 cleanup:
@@ -751,6 +810,7 @@ cleanup:
     rebuildOrderHeap();
     garbageCollect();
 
+    //exit(0);
     return res;
 }
 
@@ -767,7 +827,7 @@ bool SimpSolver::eliminate_() {
     // Main simplification loop:
     //
     while (n_touched > 0 || bwdsub_assigns < trail.size() || elim_heap.size() > 0) {
-
+        cout << "c size of touched: " << n_touched << endl;
         gatherTouchedClauses();
         // printf("  ## (time = %6.2f s) BWD-SUB: queue = %d, trail = %d\n", cpuTime(), subsumption_queue.size(), trail.size() - bwdsub_assigns);
         if ((subsumption_queue.size() > 0 || bwdsub_assigns < trail.size()) &&
@@ -775,6 +835,12 @@ bool SimpSolver::eliminate_() {
             ok = false;
             goto cleanup;
         }
+        cout << "c x n vars       : " << nFreeVars() << endl;
+        #ifdef DEBUG_VARELIM
+        cout << "c x cls long     : " << get_num_long_cls() << endl;
+        cout << "c x cls bin      : " << get_num_bin_cls() << endl;
+        cout << "c x long cls lits: " << get_num_long_cls_lits() << endl;
+        #endif
 
         // Empty elim_heap and return immediately on user-interrupt:
         if (asynch_interrupt) {
@@ -821,6 +887,13 @@ bool SimpSolver::eliminate_() {
 
             checkGarbage(simp_garbage_frac);
         }
+        cout << "c before touched check" << endl;
+        cout << "c x n vars       : " << nFreeVars() << endl;
+        #ifdef DEBUG_VARELIM
+        cout << "c x cls long     : " << get_num_long_cls() << endl;
+        cout << "c x cls bin      : " << get_num_bin_cls() << endl;
+        cout << "c x long cls lits: " << get_num_long_cls_lits() << endl;
+        #endif
 
         assert(subsumption_queue.size() == 0);
     }
