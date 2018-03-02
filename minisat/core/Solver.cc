@@ -1722,6 +1722,7 @@ lbool Solver::search(int& nof_conflicts) {
             analyze(confl, learnt_clause, backtrack_level, lbd);
             cancelUntil(backtrack_level);
 
+            //BEWARE!!!!!!!! here the lbd is being cheated with!!
             lbd--;
             if (VSIDS) {
                 cached = false;
