@@ -29,10 +29,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <signal.h>
 #include <unistd.h>
 
+#include <iostream>
+#include <iomanip>
 #include "mtl/Sort.h"
 #include "core/Solver.h"
 
+#include <ctime>
+
 using namespace Minisat;
+using std::cout;
+using std::endl;
 
 #ifdef BIN_DRUP
 int Solver::buf_len = 0;
@@ -43,6 +49,11 @@ unsigned char* Solver::buf_ptr = drup_buf;
 //=================================================================================================
 // Options:
 
+
+static inline double cpuTime(void)
+{
+    return (double)clock() / CLOCKS_PER_SEC;
+}
 
 static const char* _cat = "CORE";
 
@@ -681,6 +692,7 @@ bool Solver::simplifyLearnt_tier2() {
 
 bool Solver::simplifyAll() {
     ////
+    double mytime = cpuTime();
     simplified_length_record = original_length_record = 0;
 
     if (!ok || propagate() != CRef_Undef) {
@@ -705,6 +717,8 @@ bool Solver::simplifyAll() {
     //  printf("c size_reduce_ratio     : %4.2f%%\n",
     //         original_length_record == 0 ? 0 : (original_length_record - simplified_length_record) * 100 / (double)original_length_record);
 
+    cout << "c SIMPLIFY ALL NOW T:" << std::setprecision(2) << (cpuTime() - mytime)
+    << " confl: " << conflicts << endl;
     return true;
 }
 //=================================================================================================
