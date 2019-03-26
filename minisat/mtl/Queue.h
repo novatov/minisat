@@ -33,7 +33,7 @@ class Queue {
     int     first;
     int     end;
 
-public:
+  public:
     typedef T Key;
 
     Queue() : buf(1), first(0), end(0) {}
@@ -47,12 +47,12 @@ public:
         return (end >= first) ? end - first : end - first + buf.size();
     }
 
-    const T& operator [] (int index) const {
+    const T& operator [] (int index) const  {
         assert(index >= 0);
         assert(index < size());
         return buf[(first + index) % buf.size()];
     }
-    T&       operator [] (int index) {
+    T&       operator [] (int index)        {
         assert(index >= 0);
         assert(index < size());
         return buf[(first + index) % buf.size()];

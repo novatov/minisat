@@ -59,14 +59,14 @@ namespace Minisat {
 // Solver -- the main class:
 
 class Solver {
-private:
+  private:
     template<typename T>
     class MyQueue {
         int max_sz, q_sz;
         int ptr;
         int64_t sum;
         vec<T> q;
-    public:
+      public:
         MyQueue(int sz) : max_sz(sz), q_sz(0), ptr(0), sum(0) {
             assert(sz > 0);
             q.growTo(sz);
@@ -85,7 +85,7 @@ private:
             return sum / (double) max_sz;
         }
         #endif
-        inline void   clear() {
+        inline void   clear()       {
             sum = 0;
             q_sz = 0;
             ptr = 0;
@@ -104,7 +104,7 @@ private:
         }
     };
 
-public:
+  public:
 
     // Constructor/Destructor:
     //
@@ -212,6 +212,7 @@ public:
     //
     uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, conflicts_VSIDS;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+    uint64_t chrono_backtrack, non_chrono_backtrack;
 
     vec<uint32_t> picked;
     vec<uint32_t> conflicted;
@@ -220,7 +221,7 @@ public:
     vec<uint32_t> canceled;
     #endif
 
-protected:
+  protected:
 
     // Helper structures:
     //
@@ -261,6 +262,16 @@ protected:
         VarOrderLt(const vec<double>&  act) : activity(act) { }
     };
 
+    struct ConflictData {
+        ConflictData() :
+            nHighestLevel(-1),
+            bOnlyOneLitFromHighest(false)
+        {}
+
+        int nHighestLevel;
+        bool bOnlyOneLitFromHighest;
+    };
+
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
@@ -299,6 +310,9 @@ protected:
 
     ClauseAllocator     ca;
 
+    int                 confl_to_chrono;
+    int                 chrono;
+
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
     //
@@ -319,14 +333,14 @@ protected:
     //
     int64_t             conflict_budget;    // -1 means no budget.
     int64_t             propagation_budget; // -1 means no budget.
-    volatile bool                asynch_interrupt;
+    bool                asynch_interrupt;
 
     // Main internal methods:
     //
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
     Lit      pickBranchLit    ();                                                      // Return the next decision variable.
     void     newDecisionLevel ();                                                      // Begins a new decision level.
-    void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
+    void     uncheckedEnqueue (Lit p, int level = 0, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
     CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
@@ -364,9 +378,12 @@ protected:
     int      decisionLevel    ()      const; // Gives the current decisionlevel.
     uint32_t abstractLevel    (Var x) const; // Used to represent an abstraction of sets of decision levels.
     CRef     reason           (Var x) const;
-public:
+
+    ConflictData FindConflictLevel(CRef cind);
+
+  public:
     int      level            (Var x) const;
-protected:
+  protected:
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
     bool     withinBudget     ()      const;
 
@@ -456,9 +473,10 @@ protected:
 
     // simplify
     //
-public:
+  public:
     bool    simplifyAll();
     void    simplifyLearnt(Clause& c);
+    bool    simplifyLearnt_x(vec<CRef>& learnts_x);
     bool    simplifyLearnt_core();
     bool    simplifyLearnt_tier2();
     int     trailRecord;
@@ -555,29 +573,29 @@ inline void Solver::checkGarbage(double gf) {
 }
 
 // NOTE: enqueue does not set the ok flag! (only public methods do)
-inline bool     Solver::enqueue         (Lit p, CRef from) {
-    return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
+inline bool     Solver::enqueue         (Lit p, CRef from)      {
+    return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, decisionLevel(), from), true);
 }
-inline bool     Solver::addClause       (const vec<Lit>& ps) {
+inline bool     Solver::addClause       (const vec<Lit>& ps)    {
     ps.copyTo(add_tmp);
     return addClause_(add_tmp);
 }
-inline bool     Solver::addEmptyClause  () {
+inline bool     Solver::addEmptyClause  ()                      {
     add_tmp.clear();
     return addClause_(add_tmp);
 }
-inline bool     Solver::addClause       (Lit p) {
+inline bool     Solver::addClause       (Lit p)                 {
     add_tmp.clear();
     add_tmp.push(p);
     return addClause_(add_tmp);
 }
-inline bool     Solver::addClause       (Lit p, Lit q) {
+inline bool     Solver::addClause       (Lit p, Lit q)          {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
     return addClause_(add_tmp);
 }
-inline bool     Solver::addClause       (Lit p, Lit q, Lit r) {
+inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
@@ -588,41 +606,41 @@ inline bool     Solver::locked          (const Clause& c) const {
     int i = c.size() != 2 ? 0 : (value(c[0]) == l_True ? 0 : 1);
     return value(c[i]) == l_True && reason(var(c[i])) != CRef_Undef && ca.lea(reason(var(c[i]))) == &c;
 }
-inline void     Solver::newDecisionLevel() {
+inline void     Solver::newDecisionLevel()                      {
     trail_lim.push(trail.size());
 }
 
-inline int      Solver::decisionLevel ()      const {
+inline int      Solver::decisionLevel ()      const   {
     return trail_lim.size();
 }
-inline uint32_t Solver::abstractLevel (Var x) const {
+inline uint32_t Solver::abstractLevel (Var x) const   {
     return 1 << (level(x) & 31);
 }
-inline lbool    Solver::value         (Var x) const {
+inline lbool    Solver::value         (Var x) const   {
     return assigns[x];
 }
-inline lbool    Solver::value         (Lit p) const {
+inline lbool    Solver::value         (Lit p) const   {
     return assigns[var(p)] ^ sign(p);
 }
-inline lbool    Solver::modelValue    (Var x) const {
+inline lbool    Solver::modelValue    (Var x) const   {
     return model[x];
 }
-inline lbool    Solver::modelValue    (Lit p) const {
+inline lbool    Solver::modelValue    (Lit p) const   {
     return model[var(p)] ^ sign(p);
 }
-inline int      Solver::nAssigns      ()      const {
+inline int      Solver::nAssigns      ()      const   {
     return trail.size();
 }
-inline int      Solver::nClauses      ()      const {
+inline int      Solver::nClauses      ()      const   {
     return clauses.size();
 }
-inline int      Solver::nLearnts      ()      const {
+inline int      Solver::nLearnts      ()      const   {
     return learnts_core.size() + learnts_tier2.size() + learnts_local.size();
 }
-inline int      Solver::nVars         ()      const {
+inline int      Solver::nVars         ()      const   {
     return vardata.size();
 }
-inline int      Solver::nFreeVars     ()      const {
+inline int      Solver::nFreeVars     ()      const   {
     return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]);
 }
 inline void     Solver::setPolarity   (Var v, bool b) {
@@ -666,18 +684,18 @@ inline bool     Solver::withinBudget() const {
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
 // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
 // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
-inline bool     Solver::solve         () {
+inline bool     Solver::solve         ()                    {
     budgetOff();
     assumptions.clear();
     return solve_() == l_True;
 }
-inline bool     Solver::solve         (Lit p) {
+inline bool     Solver::solve         (Lit p)               {
     budgetOff();
     assumptions.clear();
     assumptions.push(p);
     return solve_() == l_True;
 }
-inline bool     Solver::solve         (Lit p, Lit q) {
+inline bool     Solver::solve         (Lit p, Lit q)        {
     budgetOff();
     assumptions.clear();
     assumptions.push(p);
@@ -701,7 +719,7 @@ inline lbool    Solver::solveLimited  (const vec<Lit>& assumps) {
     assumps.copyTo(assumptions);
     return solve_();
 }
-inline bool     Solver::okay          ()      const {
+inline bool     Solver::okay          ()      const   {
     return ok;
 }
 
@@ -727,7 +745,6 @@ inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r) {
     as.push(r);
     toDimacs(file, as);
 }
-
 
 //=================================================================================================
 // Debug etc:

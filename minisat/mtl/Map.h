@@ -78,13 +78,13 @@ static const int primes [nprimes] = { 31, 73, 151, 313, 643, 1291, 2593, 5233, 1
 
 template<class K, class D, class H = Hash<K>, class E = Equal<K> >
 class Map {
-public:
+  public:
     struct Pair {
         K key;
         D data;
     };
 
-private:
+  private:
     H          hash;
     E          equals;
 
@@ -138,7 +138,7 @@ private:
     }
 
 
-public:
+  public:
 
     Map () : table(NULL), cap(0), size(0) {}
     Map (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0) {}

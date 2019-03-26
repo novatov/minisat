@@ -46,7 +46,7 @@ extern void setHelpPrefixStr (const char* str);
 
 
 class Option {
-protected:
+  protected:
     const char* name;
     const char* description;
     const char* category;
@@ -83,7 +83,7 @@ protected:
         getOptionList().push(this);
     }
 
-public:
+  public:
     virtual ~Option() {}
 
     virtual bool parse             (const char* str)      = 0;
@@ -126,11 +126,11 @@ struct DoubleRange {
 
 
 class DoubleOption : public Option {
-protected:
+  protected:
     DoubleRange range;
     double      value;
 
-public:
+  public:
     DoubleOption(const char* c, const char* n, const char* d, double def = double(), DoubleRange r = DoubleRange(-HUGE_VAL, false, HUGE_VAL, false))
         : Option(n, d, c, "<double>"), range(r), value(def) {
         // FIXME: set LC_NUMERIC to "C" to make sure that strtof/strtod parses decimal point correctly.
@@ -139,10 +139,10 @@ public:
     operator      double   (void) const {
         return value;
     }
-    operator      double&  (void) {
+    operator      double&  (void)       {
         return value;
     }
-    DoubleOption& operator=(double x) {
+    DoubleOption& operator=(double x)   {
         value = x;
         return *this;
     }
@@ -194,21 +194,21 @@ public:
 
 
 class IntOption : public Option {
-protected:
+  protected:
     IntRange range;
     int32_t  value;
 
-public:
+  public:
     IntOption(const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange(INT32_MIN, INT32_MAX))
         : Option(n, d, c, "<int32>"), range(r), value(def) {}
 
     operator   int32_t   (void) const {
         return value;
     }
-    operator   int32_t&  (void) {
+    operator   int32_t&  (void)       {
         return value;
     }
-    IntOption& operator= (int32_t x) {
+    IntOption& operator= (int32_t x)  {
         value = x;
         return *this;
     }
@@ -266,21 +266,21 @@ public:
 #ifndef _MSC_VER
 
 class Int64Option : public Option {
-protected:
+  protected:
     Int64Range range;
     int64_t  value;
 
-public:
+  public:
     Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(), Int64Range r = Int64Range(INT64_MIN, INT64_MAX))
         : Option(n, d, c, "<int64>"), range(r), value(def) {}
 
     operator     int64_t   (void) const {
         return value;
     }
-    operator     int64_t&  (void) {
+    operator     int64_t&  (void)       {
         return value;
     }
-    Int64Option& operator= (int64_t x) {
+    Int64Option& operator= (int64_t x)  {
         value = x;
         return *this;
     }
@@ -340,17 +340,17 @@ public:
 
 class StringOption : public Option {
     const char* value;
-public:
+  public:
     StringOption(const char* c, const char* n, const char* d, const char* def = NULL)
         : Option(n, d, c, "<string>"), value(def) {}
 
-    operator      const char*  (void) const {
+    operator      const char*  (void) const     {
         return value;
     }
-    operator      const char*& (void) {
+    operator      const char*& (void)           {
         return value;
     }
-    StringOption& operator=    (const char* x) {
+    StringOption& operator=    (const char* x)  {
         value = x;
         return *this;
     }
@@ -383,17 +383,17 @@ public:
 class BoolOption : public Option {
     bool value;
 
-public:
+  public:
     BoolOption(const char* c, const char* n, const char* d, bool v)
         : Option(n, d, c, "<bool>"), value(v) {}
 
     operator    bool     (void) const {
         return value;
     }
-    operator    bool&    (void) {
+    operator    bool&    (void)       {
         return value;
     }
-    BoolOption& operator=(bool b) {
+    BoolOption& operator=(bool b)     {
         value = b;
         return *this;
     }

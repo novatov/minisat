@@ -59,39 +59,39 @@ class vec {
         cap += ((cap >> 1) + 2) & ~1;
     }
 
-public:
+  public:
     // Constructors:
     vec()                       : data(NULL), sz(0), cap(0)    { }
-    explicit vec(int size)      : data(NULL), sz(0), cap(0) {
+    explicit vec(int size)      : data(NULL), sz(0), cap(0)    {
         growTo(size);
     }
-    vec(int size, const T& pad) : data(NULL), sz(0), cap(0) {
+    vec(int size, const T& pad) : data(NULL), sz(0), cap(0)    {
         growTo(size, pad);
     }
-    ~vec() {
+    ~vec()                                                          {
         clear(true);
     }
 
     // Pointer to first element:
-    operator T*       (void) {
+    operator T*       (void)           {
         return data;
     }
 
     // Size operations:
-    int      size     (void) const {
+    int      size     (void) const     {
         return sz;
     }
-    void     shrink   (int nelems) {
+    void     shrink   (int nelems)     {
         assert(nelems <= sz);
         for (int i = 0; i < nelems; i++) {
             sz--, data[sz].~T();
         }
     }
-    void     shrink_  (int nelems) {
+    void     shrink_  (int nelems)     {
         assert(nelems <= sz);
         sz -= nelems;
     }
-    int      capacity (void) const {
+    int      capacity (void) const     {
         return cap;
     }
     void     capacity (int min_cap);
@@ -100,24 +100,24 @@ public:
     void     clear    (bool dealloc = false);
 
     // Stack interface:
-    void     push  (void) {
+    void     push  (void)              {
         if (sz == cap) {
             capacity(sz+1);
         }
         new (&data[sz]) T();
         sz++;
     }
-    void     push  (const T& elem) {
+    void     push  (const T& elem)     {
         if (sz == cap) {
             capacity(sz+1);
         }
         data[sz++] = elem;
     }
-    void     push_ (const T& elem) {
+    void     push_ (const T& elem)     {
         assert(sz < cap);
         data[sz++] = elem;
     }
-    void     pop   (void) {
+    void     pop   (void)              {
         assert(sz > 0);
         sz--, data[sz].~T();
     }
@@ -126,10 +126,10 @@ public:
     // happen given the way capacities are calculated (below). Essentially, all capacities are
     // even, but INT_MAX is odd.
 
-    const T& last  (void) const {
+    const T& last  (void) const        {
         return data[sz-1];
     }
-    T&       last  (void) {
+    T&       last  (void)              {
         return data[sz-1];
     }
 
@@ -137,7 +137,7 @@ public:
     const T& operator [] (int index) const {
         return data[index];
     }
-    T&       operator [] (int index) {
+    T&       operator [] (int index)       {
         return data[index];
     }
 

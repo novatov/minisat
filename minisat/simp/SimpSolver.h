@@ -39,7 +39,7 @@ namespace Minisat {
 
 
 class SimpSolver : public Solver {
-public:
+  public:
     // Constructor/Destructor:
     //
     SimpSolver();
@@ -107,7 +107,7 @@ public:
     int     asymm_lits;
     int     eliminated_vars;
 
-protected:
+  protected:
 
     // Helper structures:
     //
@@ -138,10 +138,6 @@ protected:
             return ca[cr].mark() == 1;
         }
     };
-
-    unsigned get_num_long_cls() const;
-    unsigned get_num_bin_cls() const;
-    unsigned get_num_long_cls_lits() const;
 
     // Solver state:
     //
@@ -199,26 +195,26 @@ inline void SimpSolver::updateElimHeap(Var v) {
 }
 
 
-inline bool SimpSolver::addClause    (const vec<Lit>& ps) {
+inline bool SimpSolver::addClause    (const vec<Lit>& ps)    {
     ps.copyTo(add_tmp);
     return addClause_(add_tmp);
 }
-inline bool SimpSolver::addEmptyClause() {
+inline bool SimpSolver::addEmptyClause()                     {
     add_tmp.clear();
     return addClause_(add_tmp);
 }
-inline bool SimpSolver::addClause    (Lit p) {
+inline bool SimpSolver::addClause    (Lit p)                 {
     add_tmp.clear();
     add_tmp.push(p);
     return addClause_(add_tmp);
 }
-inline bool SimpSolver::addClause    (Lit p, Lit q) {
+inline bool SimpSolver::addClause    (Lit p, Lit q)          {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
     return addClause_(add_tmp);
 }
-inline bool SimpSolver::addClause    (Lit p, Lit q, Lit r) {
+inline bool SimpSolver::addClause    (Lit p, Lit q, Lit r)   {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
@@ -232,25 +228,25 @@ inline void SimpSolver::setFrozen    (Var v, bool b) {
     }
 }
 
-inline bool SimpSolver::solve        (                     bool do_simp, bool turn_off_simp) {
+inline bool SimpSolver::solve        (                     bool do_simp, bool turn_off_simp)  {
     budgetOff();
     assumptions.clear();
     return solve_(do_simp, turn_off_simp) == l_True;
 }
-inline bool SimpSolver::solve        (Lit p,        bool do_simp, bool turn_off_simp) {
+inline bool SimpSolver::solve        (Lit p,        bool do_simp, bool turn_off_simp)  {
     budgetOff();
     assumptions.clear();
     assumptions.push(p);
     return solve_(do_simp, turn_off_simp) == l_True;
 }
-inline bool SimpSolver::solve        (Lit p, Lit q,        bool do_simp, bool turn_off_simp) {
+inline bool SimpSolver::solve        (Lit p, Lit q,        bool do_simp, bool turn_off_simp)  {
     budgetOff();
     assumptions.clear();
     assumptions.push(p);
     assumptions.push(q);
     return solve_(do_simp, turn_off_simp) == l_True;
 }
-inline bool SimpSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp) {
+inline bool SimpSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp)  {
     budgetOff();
     assumptions.clear();
     assumptions.push(p);

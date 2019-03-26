@@ -37,6 +37,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Vec.h"
 #include "mtl/Map.h"
 #include "mtl/Alloc.h"
+#include <iostream>
 
 namespace Minisat {
 
@@ -68,37 +69,36 @@ struct Lit {
     }
 };
 
-
 inline  Lit  mkLit     (Var var, bool sign= false) {
     Lit p;
     p.x = var + var + (int)sign;
     return p;
 }
-inline  Lit  operator ~(Lit p) {
+inline  Lit  operator ~(Lit p)              {
     Lit q;
     q.x = p.x ^ 1;
     return q;
 }
-inline  Lit  operator ^(Lit p, bool b) {
+inline  Lit  operator ^(Lit p, bool b)      {
     Lit q;
     q.x = p.x ^ (unsigned int)b;
     return q;
 }
-inline  bool sign      (Lit p) {
+inline  bool sign      (Lit p)              {
     return p.x & 1;
 }
-inline  int  var       (Lit p) {
+inline  int  var       (Lit p)              {
     return p.x >> 1;
 }
 
 // Mapping Literals to and from compact integers suitable for array indexing:
-inline  int  toInt     (Var v) {
+inline  int  toInt     (Var v)              {
     return v;
 }
-inline  int  toInt     (Lit p) {
+inline  int  toInt     (Lit p)              {
     return p.x;
 }
-inline  Lit  toLit     (int i) {
+inline  Lit  toLit     (int i)              {
     Lit p;
     p.x = i;
     return p;
@@ -109,6 +109,12 @@ inline  Lit  toLit     (int i) {
 
 const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
+
+inline std::ostream& operator<<(std::ostream& out, const Lit& val) {
+    out << (sign(val) ? -var(val) : var(val)) << std::flush;
+    return out;
+}
+
 
 
 //=================================================================================================
@@ -126,7 +132,7 @@ const Lit lit_Error = { -1 };  // }
 class lbool {
     uint8_t value;
 
-public:
+  public:
     explicit lbool(uint8_t v) : value(v) { }
 
     lbool()       : value(0) { }
@@ -220,7 +226,7 @@ class Clause {
         }
     }
 
-public:
+  public:
     void calcAbstraction() {
         assert(header.has_extra);
         uint32_t abstraction = 0;
@@ -231,80 +237,80 @@ public:
     }
 
 
-    int          size        ()      const {
+    int          size        ()      const   {
         return header.size;
     }
-    void         shrink      (int i) {
+    void         shrink      (int i)         {
         assert(i <= size());
         if (header.has_extra) {
             data[header.size-i] = data[header.size];
         }
         header.size -= i;
     }
-    void         pop         () {
+    void         pop         ()              {
         shrink(1);
     }
-    bool         learnt      ()      const {
+    bool         learnt      ()      const   {
         return header.learnt;
     }
-    bool         has_extra   ()      const {
+    bool         has_extra   ()      const   {
         return header.has_extra;
     }
-    uint32_t     mark        ()      const {
+    uint32_t     mark        ()      const   {
         return header.mark;
     }
-    void         mark        (uint32_t m) {
+    void         mark        (uint32_t m)    {
         header.mark = m;
     }
-    const Lit&   last        ()      const {
+    const Lit&   last        ()      const   {
         return data[header.size-1].lit;
     }
 
-    bool         reloced     ()      const {
+    bool         reloced     ()      const   {
         return header.reloced;
     }
-    CRef         relocation  ()      const {
+    CRef         relocation  ()      const   {
         return data[0].rel;
     }
-    void         relocate    (CRef c) {
+    void         relocate    (CRef c)        {
         header.reloced = 1;
         data[0].rel = c;
     }
 
-    int          lbd         ()      const {
+    int          lbd         ()      const   {
         return header.lbd;
     }
-    void         set_lbd     (int lbd) {
+    void         set_lbd     (int lbd)       {
         header.lbd = lbd;
     }
-    bool         removable   ()      const {
+    bool         removable   ()      const   {
         return header.removable;
     }
-    void         removable   (bool b) {
+    void         removable   (bool b)        {
         header.removable = b;
     }
 
     // NOTE: somewhat unsafe to change the clause in-place! Must manually call 'calcAbstraction' afterwards for
     //       subsumption operations to behave correctly.
-    Lit&         operator [] (int i) {
+    Lit&         operator [] (int i)         {
         return data[i].lit;
     }
-    Lit          operator [] (int i) const {
+    Lit          operator [] (int i) const   {
         return data[i].lit;
     }
-    operator const Lit* (void) const {
+    operator const Lit* (void) const         {
         return (Lit*)data;
     }
 
-    uint32_t&    touched     () {
+    uint32_t&    touched     ()              {
         assert(header.has_extra && header.learnt);
         return data[header.size+1].touched;
     }
-    float&       activity    () {
+    float&       activity    ()              {
         assert(header.has_extra);
         return data[header.size].act;
     }
-    uint32_t     abstraction () const {
+    uint32_t     abstraction () const        {
         assert(header.has_extra);
         return data[header.size].abs;
     }
@@ -331,7 +337,7 @@ class ClauseAllocator : public RegionAllocator<uint32_t> {
     static int clauseWord32Size(int size, int extras) {
         return (sizeof(Clause) + (sizeof(Lit) * (size + extras))) / sizeof(uint32_t);
     }
-public:
+  public:
     bool extra_clause_field;
 
     ClauseAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), extra_clause_field(false) {}
@@ -355,13 +361,13 @@ public:
     }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    Clause&       operator[](Ref r) {
+    Clause&       operator[](Ref r)       {
         return (Clause&)RegionAllocator<uint32_t>::operator[](r);
     }
     const Clause& operator[](Ref r) const {
         return (Clause&)RegionAllocator<uint32_t>::operator[](r);
     }
-    Clause*       lea       (Ref r) {
+    Clause*       lea       (Ref r)       {
         return (Clause*)RegionAllocator<uint32_t>::lea(r);
     }
     const Clause* lea       (Ref r) const {
@@ -406,6 +412,14 @@ public:
 };
 
 
+inline std::ostream& operator<<(std::ostream& out, const Clause& cls) {
+    for (int i = 0; i < cls.size(); ++i) {
+        out << cls[i] << " ";
+    }
+
+    return out;
+}
+
 //=================================================================================================
 // OccLists -- a class for maintaining occurence lists with lazy deletion:
 
@@ -416,7 +430,7 @@ class OccLists {
     vec<Idx>  dirties;
     Deleted   deleted;
 
-public:
+  public:
     OccLists(const Deleted& d) : deleted(d) {}
 
     void  init      (const Idx& idx) {
@@ -490,12 +504,12 @@ class CMap {
     typedef Map<CRef, T, CRefHash> HashTable;
     HashTable map;
 
-public:
+  public:
     // Size-operations:
-    void     clear       () {
+    void     clear       ()                           {
         map.clear();
     }
-    int      size        ()                const {
+    int      size        ()                const      {
         return map.elems();
     }
 
@@ -507,18 +521,18 @@ public:
     void     growTo      (CRef cr, const T& t) {
         map.insert(cr, t);    // NOTE: for compatibility
     }
-    void     remove      (CRef cr) {
+    void     remove      (CRef cr)            {
         map.remove(cr);
     }
-    bool     has         (CRef cr, T& t) {
+    bool     has         (CRef cr, T& t)      {
         return map.peek(cr, t);
     }
 
     // Vector interface (the clause 'c' must already exist):
-    const T& operator [] (CRef cr) const {
+    const T& operator [] (CRef cr) const      {
         return map[cr];
     }
-    T&       operator [] (CRef cr) {
+    T&       operator [] (CRef cr)            {
         return map[cr];
     }
 

@@ -26,19 +26,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include <math.h>
+#include <algorithm>
 #include <signal.h>
 #include <unistd.h>
 
-#include <iostream>
-#include <iomanip>
 #include "mtl/Sort.h"
 #include "core/Solver.h"
 
-#include <ctime>
-
 using namespace Minisat;
-using std::cout;
-using std::endl;
+
+//#define PRINT_OUT
 
 #ifdef BIN_DRUP
 int Solver::buf_len = 0;
@@ -46,14 +43,10 @@ unsigned char Solver::drup_buf[2 * 1024 * 1024];
 unsigned char* Solver::buf_ptr = drup_buf;
 #endif
 
+
 //=================================================================================================
 // Options:
 
-
-static inline double cpuTime(void)
-{
-    return (double)clock() / CLOCKS_PER_SEC;
-}
 
 static const char* _cat = "CORE";
 
@@ -70,6 +63,8 @@ static BoolOption    opt_rnd_init_act      (_cat, "rnd-init",    "Randomize the 
 static IntOption     opt_restart_first     (_cat, "rfirst",      "The base restart interval", 100, IntRange(1, INT32_MAX));
 static DoubleOption  opt_restart_inc       (_cat, "rinc",        "Restart interval increase factor", 2, DoubleRange(1, false, HUGE_VAL, false));
 static DoubleOption  opt_garbage_frac      (_cat, "gc-frac",     "The fraction of wasted memory allowed before a garbage collection is triggered",  0.20, DoubleRange(0, false, HUGE_VAL, false));
+static IntOption     opt_chrono            (_cat, "chrono",  "Controls if to perform chrono backtrack", 100, IntRange(-1, INT32_MAX));
+static IntOption     opt_conf_to_chrono    (_cat, "confl-to-chrono",  "Controls number of conflicts to perform chrono backtrack", 4000, IntRange(-1, INT32_MAX));
 
 
 //=================================================================================================
@@ -112,6 +107,7 @@ Solver::Solver() :
     //
     , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_VSIDS(0)
     , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
+    , chrono_backtrack(0), non_chrono_backtrack(0)
 
     , ok                 (true)
     , cla_inc            (1)
@@ -131,6 +127,8 @@ Solver::Solver() :
     , lbd_queue          (50)
     , next_T2_reduce     (10000)
     , next_L_reduce      (15000)
+    , confl_to_chrono    (opt_conf_to_chrono)
+    , chrono             (opt_chrono)
 
     , counter            (0)
 
@@ -438,6 +436,112 @@ void Solver::simplifyLearnt(Clause& c) {
 
 }
 
+bool Solver::simplifyLearnt_x(vec<CRef>& learnts_x) {
+    int beforeSize, afterSize;
+    int learnts_x_size_before = learnts_x.size();
+
+    int ci, cj, li, lj;
+    bool sat, false_lit;
+    unsigned int nblevels;
+    ////
+    //printf("learnts_x size : %d\n", learnts_x.size());
+
+    ////
+    int nbSimplified = 0;
+    int nbSimplifing = 0;
+
+    for (ci = 0, cj = 0; ci < learnts_x.size(); ci++) {
+        CRef cr = learnts_x[ci];
+        Clause& c = ca[cr];
+
+        if (removed(cr)) {
+            continue;
+        } else if (c.simplified()) {
+            learnts_x[cj++] = learnts_x[ci];
+            ////
+            nbSimplified++;
+        } else {
+            ////
+            nbSimplifing++;
+            sat = false_lit = false;
+            for (int i = 0; i < c.size(); i++) {
+                if (value(c[i]) == l_True) {
+                    sat = true;
+                    break;
+                } else if (value(c[i]) == l_False) {
+                    false_lit = true;
+                }
+            }
+            if (sat) {
+                removeClause(cr);
+            } else {
+                detachClause(cr, true);
+
+                if (false_lit) {
+                    for (li = lj = 0; li < c.size(); li++) {
+                        if (value(c[li]) != l_False) {
+                            c[lj++] = c[li];
+                        }
+                    }
+                    c.shrink(li - lj);
+                }
+
+                beforeSize = c.size();
+                assert(c.size() > 1);
+                // simplify a learnt clause c
+                simplifyLearnt(c);
+                assert(c.size() > 0);
+                afterSize = c.size();
+
+                //printf("beforeSize: %2d, afterSize: %2d\n", beforeSize, afterSize);
+
+                if (c.size() == 1) {
+                    // when unit clause occur, enqueue and propagate
+                    uncheckedEnqueue(c[0]);
+                    if (propagate() != CRef_Undef) {
+                        ok = false;
+                        return false;
+                    }
+                    // delete the clause memory in logic
+                    c.mark(1);
+                    ca.free(cr);
+                } else {
+                    attachClause(cr);
+                    learnts_x[cj++] = learnts_x[ci];
+
+                    nblevels = computeLBD(c);
+                    if (nblevels < c.lbd()) {
+                        //printf("lbd-before: %d, lbd-after: %d\n", c.lbd(), nblevels);
+                        c.set_lbd(nblevels);
+                    }
+                    if (c.mark() != CORE) {
+                        if (c.lbd() <= core_lbd_cut) {
+                            //if (c.mark() == LOCAL) local_learnts_dirty = true;
+                            //else tier2_learnts_dirty = true;
+                            cj--;
+                            learnts_core.push(cr);
+                            c.mark(CORE);
+                        } else if (c.mark() == LOCAL && c.lbd() <= 6) {
+                            //local_learnts_dirty = true;
+                            cj--;
+                            learnts_tier2.push(cr);
+                            c.mark(TIER2);
+                        }
+                    }
+
+                    c.setSimplified(true);
+                }
+            }
+        }
+    }
+    learnts_x.shrink(ci - cj);
+
+    //   printf("c nbLearnts_x %d / %d, nbSimplified: %d, nbSimplifing: %d\n",
+    //          learnts_x_size_before, learnts_x.size(), nbSimplified, nbSimplifing);
+
+    return true;
+}
+
 bool Solver::simplifyLearnt_core() {
     int beforeSize, afterSize;
     int learnts_core_size_before = learnts_core.size();
@@ -499,8 +603,7 @@ bool Solver::simplifyLearnt_core() {
                 assert(c.size() > 0);
                 afterSize = c.size();
 
-                if (saved_size !=c.size() && drup_file) {
-
+                if (drup_file && saved_size !=c.size()) {
                     #ifdef BIN_DRUP
                     binDRUP('a', c, drup_file);
                     //                    binDRUP('d', add_oc, drup_file);
@@ -622,7 +725,7 @@ bool Solver::simplifyLearnt_tier2() {
                 assert(c.size() > 0);
                 afterSize = c.size();
 
-                if (saved_size!=c.size() && drup_file) {
+                if (drup_file && saved_size!=c.size()) {
 
                     #ifdef BIN_DRUP
                     binDRUP('a', c, drup_file);
@@ -692,7 +795,6 @@ bool Solver::simplifyLearnt_tier2() {
 
 bool Solver::simplifyAll() {
     ////
-    double mytime = cpuTime();
     simplified_length_record = original_length_record = 0;
 
     if (!ok || propagate() != CRef_Undef) {
@@ -710,6 +812,7 @@ bool Solver::simplifyAll() {
     if (!simplifyLearnt_tier2()) {
         return ok = false;
     }
+    //if (!simplifyLearnt_x(learnts_local)) return ok = false;
 
     checkGarbage();
 
@@ -717,8 +820,6 @@ bool Solver::simplifyAll() {
     //  printf("c size_reduce_ratio     : %4.2f%%\n",
     //         original_length_record == 0 ? 0 : (original_length_record - simplified_length_record) * 100 / (double)original_length_record);
 
-    cout << "c SIMPLIFY ALL NOW T:" << std::setprecision(2) << (cpuTime() - mytime)
-    << " confl: " << conflicts << endl;
     return true;
 }
 //=================================================================================================
@@ -897,39 +998,56 @@ bool Solver::satisfied(const Clause& c) const {
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
 //
-void Solver::cancelUntil(int level) {
-    if (decisionLevel() > level) {
-        for (int c = trail.size()-1; c >= trail_lim[level]; c--) {
+void Solver::cancelUntil(int bLevel) {
+
+    if (decisionLevel() > bLevel) {
+        #ifdef PRINT_OUT
+        std::cout << "bt " << bLevel << "\n";
+        #endif
+        add_tmp.clear();
+        for (int c = trail.size()-1; c >= trail_lim[bLevel]; c--) {
             Var      x  = var(trail[c]);
 
-            if (!VSIDS) {
-                uint32_t age = conflicts - picked[x];
-                if (age > 0) {
-                    double adjusted_reward = ((double) (conflicted[x] + almost_conflicted[x])) / ((double) age);
-                    double old_activity = activity_CHB[x];
-                    activity_CHB[x] = step_size * adjusted_reward + ((1 - step_size) * old_activity);
-                    if (order_heap_CHB.inHeap(x)) {
-                        if (activity_CHB[x] > old_activity) {
-                            order_heap_CHB.decrease(x);
-                        } else {
-                            order_heap_CHB.increase(x);
+            if (level(x) <= bLevel) {
+                add_tmp.push(trail[c]);
+            } else {
+                if (!VSIDS) {
+                    uint32_t age = conflicts - picked[x];
+                    if (age > 0) {
+                        double adjusted_reward = ((double) (conflicted[x] + almost_conflicted[x])) / ((double) age);
+                        double old_activity = activity_CHB[x];
+                        activity_CHB[x] = step_size * adjusted_reward + ((1 - step_size) * old_activity);
+                        if (order_heap_CHB.inHeap(x)) {
+                            if (activity_CHB[x] > old_activity) {
+                                order_heap_CHB.decrease(x);
+                            } else {
+                                order_heap_CHB.increase(x);
+                            }
                         }
                     }
+                    #ifdef ANTI_EXPLORATION
+                    canceled[x] = conflicts;
+                    #endif
                 }
-                #ifdef ANTI_EXPLORATION
-                canceled[x] = conflicts;
-                #endif
-            }
 
-            assigns [x] = l_Undef;
-            if (phase_saving > 1 || (phase_saving == 1) && c > trail_lim.last()) {
-                polarity[x] = sign(trail[c]);
+                assigns [x] = l_Undef;
+                #ifdef PRINT_OUT
+                std::cout << "undo " << x << "\n";
+                #endif
+                if (phase_saving > 1 || (phase_saving == 1) && c > trail_lim.last()) {
+                    polarity[x] = sign(trail[c]);
+                }
+                insertVarOrder(x);
             }
-            insertVarOrder(x);
         }
-        qhead = trail_lim[level];
-        trail.shrink(trail.size() - trail_lim[level]);
-        trail_lim.shrink(trail_lim.size() - level);
+        qhead = trail_lim[bLevel];
+        trail.shrink(trail.size() - trail_lim[bLevel]);
+        trail_lim.shrink(trail_lim.size() - bLevel);
+        for (int nLitId = add_tmp.size() - 1; nLitId >= 0; --nLitId) {
+            trail.push_(add_tmp[nLitId]);
+        }
+
+        add_tmp.clear();
     }
 }
 
@@ -976,6 +1094,41 @@ Lit Solver::pickBranchLit() {
     return mkLit(next, polarity[next]);
 }
 
+inline Solver::ConflictData Solver::FindConflictLevel(CRef cind) {
+    ConflictData data;
+    Clause& conflCls = ca[cind];
+    data.nHighestLevel = level(var(conflCls[0]));
+    if (data.nHighestLevel == decisionLevel() && level(var(conflCls[1])) == decisionLevel()) {
+        return data;
+    }
+
+    int highestId = 0;
+    data.bOnlyOneLitFromHighest = true;
+    // find the largest decision level in the clause
+    for (int nLitId = 1; nLitId < conflCls.size(); ++nLitId) {
+        int nLevel = level(var(conflCls[nLitId]));
+        if (nLevel > data.nHighestLevel) {
+            highestId = nLitId;
+            data.nHighestLevel = nLevel;
+            data.bOnlyOneLitFromHighest = true;
+        } else if (nLevel == data.nHighestLevel && data.bOnlyOneLitFromHighest == true) {
+            data.bOnlyOneLitFromHighest = false;
+        }
+    }
+
+    if (highestId != 0) {
+        std::swap(conflCls[0], conflCls[highestId]);
+        if (highestId > 1) {
+            OccLists<Lit, vec<Watcher>, WatcherDeleted>& ws = conflCls.size() == 2 ? watches_bin : watches;
+            //ws.smudge(~conflCls[highestId]);
+            remove(ws[~conflCls[highestId]], Watcher(cind, conflCls[1]));
+            ws[~conflCls[0]].push(Watcher(cind, conflCls[1]));
+        }
+    }
+
+    return data;
+}
+
 
 /*_________________________________________________________________________________________________
 |
@@ -1002,6 +1155,8 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel, int& ou
     //
     out_learnt.push();      // (leave room for the asserting literal)
     int index   = trail.size() - 1;
+    int nDecisionLevel = level(var(ca[confl][0]));
+    assert(nDecisionLevel == level(var(ca[confl][0])));
 
     do {
         assert(confl != CRef_Undef); // (otherwise should be UIP)
@@ -1051,7 +1206,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel, int& ou
                     conflicted[var(q)]++;
                 }
                 seen[var(q)] = 1;
-                if (level(var(q)) >= decisionLevel()) {
+                if (level(var(q)) >= nDecisionLevel) {
                     pathC++;
                 } else {
                     out_learnt.push(q);
@@ -1060,8 +1215,11 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel, int& ou
         }
 
         // Select next clause to look at:
-        while (!seen[var(trail[index--])]);
-        p     = trail[index+1];
+        do {
+            while (!seen[var(trail[index--])]);
+            p  = trail[index+1];
+        } while (level(var(p)) < nDecisionLevel);
+
         confl = reason(var(p));
         seen[var(p)] = 0;
         pathC--;
@@ -1278,7 +1436,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 }
 
 
-void Solver::uncheckedEnqueue(Lit p, CRef from) {
+void Solver::uncheckedEnqueue(Lit p, int level, CRef from) {
     assert(value(p) == l_Undef);
     Var x = var(p);
     if (!VSIDS) {
@@ -1298,7 +1456,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
     }
 
     assigns[x] = lbool(!sign(p));
-    vardata[x] = mkVarData(from, decisionLevel());
+    vardata[x] = mkVarData(from, level);
     trail.push_(p);
 }
 
@@ -1322,6 +1480,7 @@ CRef Solver::propagate() {
 
     while (qhead < trail.size()) {
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
+        int currLevel = level(var(p));
         vec<Watcher>&  ws  = watches[p];
         Watcher*        i, *j, *end;
         num_props++;
@@ -1337,7 +1496,10 @@ CRef Solver::propagate() {
                 goto ExitProp;
                 #endif
             } else if (value(the_other) == l_Undef) {
-                uncheckedEnqueue(the_other, ws_bin[k].cref);
+                uncheckedEnqueue(the_other, currLevel, ws_bin[k].cref);
+                #ifdef  PRINT_OUT
+                std::cout << "i " << the_other << " l " << currLevel << "\n";
+                #endif
             }
         }
 
@@ -1386,7 +1548,34 @@ CRef Solver::propagate() {
                     *j++ = *i++;
                 }
             } else {
-                uncheckedEnqueue(first, cr);
+                if (currLevel == decisionLevel()) {
+                    uncheckedEnqueue(first, currLevel, cr);
+                    #ifdef PRINT_OUT
+                    std::cout << "i " << first << " l " << currLevel << "\n";
+                    #endif
+                } else {
+                    int nMaxLevel = currLevel;
+                    int nMaxInd = 1;
+                    // pass over all the literals in the clause and find the one with the biggest level
+                    for (int nInd = 2; nInd < c.size(); ++nInd) {
+                        int nLevel = level(var(c[nInd]));
+                        if (nLevel > nMaxLevel) {
+                            nMaxLevel = nLevel;
+                            nMaxInd = nInd;
+                        }
+                    }
+
+                    if (nMaxInd != 1) {
+                        std::swap(c[1], c[nMaxInd]);
+                        *j--; // undo last watch
+                        watches[~c[1]].push(w);
+                    }
+
+                    uncheckedEnqueue(first, nMaxLevel, cr);
+                    #ifdef PRINT_OUT
+                    std::cout << "i " << first << " l " << nMaxLevel << "\n";
+                    #endif
+                }
             }
 
 NextClause:
@@ -1559,6 +1748,7 @@ bool Solver::collectFirstUIP(CRef confl) {
             //    varBumpActivity(v);
         }
     }
+
     int limit=trail_lim[minLevel-1];
     for (int i=trail.size()-1; i>=limit; i--) {
         Lit p=trail[i];
@@ -1719,8 +1909,13 @@ lbool Solver::search(int& nof_conflicts) {
             if (conflicts == 100000 && learnts_core.size() < 100) {
                 core_lbd_cut = 5;
             }
-            if (decisionLevel() == 0) {
+            ConflictData data = FindConflictLevel(confl);
+            if (data.nHighestLevel == 0) {
                 return l_False;
+            }
+            if (data.bOnlyOneLitFromHighest) {
+                cancelUntil(data.nHighestLevel - 1);
+                continue;
             }
 
             learnt_clause.clear();
@@ -1734,9 +1929,15 @@ lbool Solver::search(int& nof_conflicts) {
             }
 
             analyze(confl, learnt_clause, backtrack_level, lbd);
-            cancelUntil(backtrack_level);
+            // check chrono backtrack condition
+            if ((confl_to_chrono < 0 || confl_to_chrono <= conflicts) && chrono > -1 && (decisionLevel() - backtrack_level) >= chrono) {
+                ++chrono_backtrack;
+                cancelUntil(data.nHighestLevel -1);
+            } else { // default behavior
+                ++non_chrono_backtrack;
+                cancelUntil(backtrack_level);
+            }
 
-            //BEWARE!!!!!!!! here the lbd is being cheated with!!
             lbd--;
             if (VSIDS) {
                 cached = false;
@@ -1762,7 +1963,12 @@ lbool Solver::search(int& nof_conflicts) {
                     claBumpActivity(ca[cr]);
                 }
                 attachClause(cr);
-                uncheckedEnqueue(learnt_clause[0], cr);
+
+                uncheckedEnqueue(learnt_clause[0], backtrack_level, cr);
+                #ifdef PRINT_OUT
+                std::cout << "new " << ca[cr] << "\n";
+                std::cout << "ci " << learnt_clause[0] << " l " << backtrack_level << "\n";
+                #endif
             }
             if (drup_file) {
                 #ifdef BIN_DRUP
@@ -1779,27 +1985,17 @@ lbool Solver::search(int& nof_conflicts) {
                 varDecayActivity();
             }
             claDecayActivity();
-            if (verbosity >= 1 && ((conflicts & 0xfff) == (conflicts & 0x000)))
-                    printf("c | %9d %1d | %7d %8d %8d | %8d %8d %8d %8d %6.0f |\n",
-                           (int)conflicts,
-                           (int)VSIDS,
-
-                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
-                           nClauses(),
-                           (int)clauses_literals,
-
-                           (int)max_learnts,
-                           learnts_core.size(),
-                           learnts_tier2.size(),
-                           learnts_local.size(),
-                           (double)learnts_literals/nLearnts());
 
             /*if (--learntsize_adjust_cnt == 0){
                 learntsize_adjust_confl *= learntsize_adjust_inc;
                 learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
                 max_learnts             *= learntsize_inc;
 
-
+                if (verbosity >= 1)
+                    printf("c | %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+                           (int)conflicts,
+                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
             }*/
 
         } else {
@@ -1864,7 +2060,10 @@ lbool Solver::search(int& nof_conflicts) {
 
             // Increase decision level and enqueue 'next'
             newDecisionLevel();
-            uncheckedEnqueue(next);
+            uncheckedEnqueue(next, decisionLevel());
+            #ifdef PRINT_OUT
+            std::cout << "d " << next << " l " << decisionLevel() << "\n";
+            #endif
         }
     }
 }
@@ -1935,24 +2134,24 @@ lbool Solver::solve_() {
     lbool   status            = l_Undef;
 
     if (verbosity >= 1) {
-        printf("c ============================[ Search Statistics ]========================================\n");
-        printf("c | Conflicts V |          ORIGINAL         |          LEARNT                               |\n");
-        printf("c |             |    Vars  Clauses Literals |    Limit    core     tier2    local    Lit/Cl |\n");
-        printf("c =========================================================================================\n");
+        printf("c ============================[ Search Statistics ]==============================\n");
+        printf("c | Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
+        printf("c |           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
+        printf("c ===============================================================================\n");
     }
 
     add_tmp.clear();
 
     VSIDS = true;
     int init = 10000;
-    while (status == l_Undef && init > 0 && withinBudget()) {
+    while (status == l_Undef && init > 0 /*&& withinBudget()*/) {
         status = search(init);
     }
     VSIDS = false;
 
     // Search:
     int curr_restarts = 0;
-    while (status == l_Undef && withinBudget()) {
+    while (status == l_Undef /*&& withinBudget()*/) {
         if (VSIDS) {
             int weighted = INT32_MAX;
             status = search(weighted);

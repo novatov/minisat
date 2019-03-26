@@ -78,7 +78,7 @@ class Heap {
     }
 
 
-public:
+  public:
     Heap(const Comp& c) : lt(c) { }
 
     int  size      ()          const {

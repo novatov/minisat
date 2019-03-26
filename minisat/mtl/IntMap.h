@@ -33,7 +33,7 @@ template<class K, class V, class MkIndex = MkIndexDefault<K> >
 class IntMap {
     vec<V>   map;
     MkIndex  index;
-public:
+  public:
     explicit IntMap(MkIndex _index = MkIndex()) : index(_index) {}
 
     bool     has       (K k) const {
@@ -96,7 +96,7 @@ class IntSet {
     IntMap<K, char, MkIndex> in_set;
     vec<K>                   xs;
 
-public:
+  public:
     // Size operations:
     int      size        (void)      const {
         return xs.size();
@@ -142,7 +142,7 @@ class IntMapNil {
     vec<V> map;
     V      nil;
 
-public:
+  public:
     IntMap() {}
 
     void     reserve(K);
