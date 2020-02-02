@@ -60,9 +60,8 @@ template <class Comp> class Heap {
       int child = right(i) < heap.size() && lt(heap[right(i)], heap[left(i)])
                       ? right(i)
                       : left(i);
-      if (!lt(heap[child], x)) {
+      if (!lt(heap[child], x))
         break;
-      }
       heap[i] = heap[child];
       indices[heap[i]] = i;
       i = child;
@@ -93,9 +92,9 @@ public:
 
   // Safe variant of insert/decrease/increase:
   void update(int n) {
-    if (!inHeap(n)) {
+    if (!inHeap(n))
       insert(n);
-    } else {
+    else {
       percolateUp(indices[n]);
       percolateDown(indices[n]);
     }
@@ -116,17 +115,15 @@ public:
     indices[heap[0]] = 0;
     indices[x] = -1;
     heap.pop();
-    if (heap.size() > 1) {
+    if (heap.size() > 1)
       percolateDown(0);
-    }
     return x;
   }
 
   // Rebuild the heap from scratch, using the elements in 'ns':
   void build(const vec<int> &ns) {
-    for (int i = 0; i < heap.size(); i++) {
+    for (int i = 0; i < heap.size(); i++)
       indices[heap[i]] = -1;
-    }
     heap.clear();
 
     for (int i = 0; i < ns.size(); i++) {
@@ -134,15 +131,13 @@ public:
       heap.push(ns[i]);
     }
 
-    for (int i = heap.size() / 2 - 1; i >= 0; i--) {
+    for (int i = heap.size() / 2 - 1; i >= 0; i--)
       percolateDown(i);
-    }
   }
 
   void clear(bool dealloc = false) {
-    for (int i = 0; i < heap.size(); i++) {
+    for (int i = 0; i < heap.size(); i++)
       indices[heap[i]] = -1;
-    }
     heap.clear(dealloc);
   }
 };

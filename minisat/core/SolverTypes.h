@@ -64,8 +64,8 @@ struct Lit {
   bool operator==(Lit p) const { return x == p.x; }
   bool operator!=(Lit p) const { return x != p.x; }
   bool operator<(Lit p) const {
-    return x < p.x; // '<' makes p, ~p adjacent in the ordering.
-  }
+    return x < p.x;
+  } // '<' makes p, ~p adjacent in the ordering.
 };
 
 inline Lit mkLit(Var var, bool sign = false) {
@@ -197,17 +197,15 @@ class Clause {
     //
     header.simplified = 0;
 
-    for (int i = 0; i < ps.size(); i++) {
+    for (int i = 0; i < ps.size(); i++)
       data[i].lit = ps[i];
-    }
 
     if (header.has_extra) {
       if (header.learnt) {
         data[header.size].act = 0;
         data[header.size + 1].touched = 0;
-      } else {
+      } else
         calcAbstraction();
-      }
     }
   }
 
@@ -215,18 +213,16 @@ public:
   void calcAbstraction() {
     assert(header.has_extra);
     uint32_t abstraction = 0;
-    for (int i = 0; i < size(); i++) {
+    for (int i = 0; i < size(); i++)
       abstraction |= 1 << (var(data[i].lit) & 31);
-    }
     data[header.size].abs = abstraction;
   }
 
   int size() const { return header.size; }
   void shrink(int i) {
     assert(i <= size());
-    if (header.has_extra) {
+    if (header.has_extra)
       data[header.size - i] = data[header.size];
-    }
     header.size -= i;
   }
   void pop() { shrink(1); }
@@ -354,9 +350,8 @@ public:
       // simplify
       //
       to[cr].setSimplified(c.simplified());
-    } else if (to[cr].has_extra()) {
+    } else if (to[cr].has_extra())
       to[cr].calcAbstraction();
-    }
   }
 };
 
@@ -387,9 +382,8 @@ public:
   // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
   Vec &operator[](const Idx &idx) { return occs[toInt(idx)]; }
   Vec &lookup(const Idx &idx) {
-    if (dirty[toInt(idx)]) {
+    if (dirty[toInt(idx)])
       clean(idx);
-    }
     return occs[toInt(idx)];
   }
 
@@ -414,9 +408,8 @@ void OccLists<Idx, Vec, Deleted>::cleanAll() {
   for (int i = 0; i < dirties.size(); i++)
     // Dirties may contain duplicates so check here if a variable is already
     // cleaned:
-    if (dirty[toInt(dirties[i])]) {
+    if (dirty[toInt(dirties[i])])
       clean(dirties[i]);
-    }
   dirties.clear();
 }
 
@@ -425,9 +418,8 @@ void OccLists<Idx, Vec, Deleted>::clean(const Idx &idx) {
   Vec &vec = occs[toInt(idx)];
   int i, j;
   for (i = j = 0; i < vec.size(); i++)
-    if (!deleted(vec[i])) {
+    if (!deleted(vec[i]))
       vec[j++] = vec[i];
-    }
   vec.shrink(i - j);
   dirty[toInt(idx)] = 0;
 }
@@ -451,8 +443,8 @@ public:
   // Insert/Remove/Test mapping:
   void insert(CRef cr, const T &t) { map.insert(cr, t); }
   void growTo(CRef cr, const T &t) {
-    map.insert(cr, t); // NOTE: for compatibility
-  }
+    map.insert(cr, t);
+  } // NOTE: for compatibility
   void remove(CRef cr) { map.remove(cr); }
   bool has(CRef cr, T &t) { return map.peek(cr, t); }
 
@@ -497,9 +489,8 @@ inline Lit Clause::subsumes(const Clause &other) const {
   assert(header.has_extra);
   assert(other.header.has_extra);
   if (other.header.size < header.size ||
-      (data[header.size].abs & ~other.data[other.header.size].abs) != 0) {
+      (data[header.size].abs & ~other.data[other.header.size].abs) != 0)
     return lit_Error;
-  }
 
   Lit ret = lit_Undef;
   const Lit *c = (const Lit *)(*this);
@@ -508,9 +499,9 @@ inline Lit Clause::subsumes(const Clause &other) const {
   for (unsigned i = 0; i < header.size; i++) {
     // search for c[i] or ~c[i]
     for (unsigned j = 0; j < other.header.size; j++)
-      if (c[i] == d[j]) {
+      if (c[i] == d[j])
         goto ok;
-      } else if (ret == lit_Undef && c[i] == ~d[j]) {
+      else if (ret == lit_Undef && c[i] == ~d[j]) {
         ret = c[i];
         goto ok;
       }

@@ -13,6 +13,13 @@ Maple_LCM_Dist, Based on Maple_LCM -- Copyright (c) 2017, Fan Xiao, Chu-Min LI,
 Mao Luo: using a new branching heuristic called Distance at the beginning of
 search
 
+MapleLCMDistChronoBT, based on Maple_LCM_Dist -- Copyright (c), Alexander Nadel,
+Vadim Ryvchin: "Chronological Backtracking" in SAT-2018, pp. 111-121.
+
+MapleLCMDistChronoBT-DL, based on MapleLCMDistChronoBT -- Copyright (c), Stepan
+Kochemazov, Oleg Zaikin, Victor Kondratiev, Alexander Semenov: The solver was
+augmented with heuristic that moves duplicate learnt clauses into the core/tier2
+tiers depending on a number of parameters.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -52,6 +59,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "mtl/Heap.h"
 #include "mtl/Vec.h"
 #include "utils/Options.h"
+
+// duplicate learnts version
+#include <algorithm>
+#include <chrono>
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+// duplicate learnts version
 
 // Don't change the actual numbers.
 #define LOCAL 0
@@ -94,16 +111,14 @@ private:
       ptr = 0;
     }
     void push(T e) {
-      if (q_sz < max_sz) {
+      if (q_sz < max_sz)
         q_sz++;
-      } else {
+      else
         sum -= q[ptr];
-      }
       sum += e;
       q[ptr++] = e;
-      if (ptr == max_sz) {
+      if (ptr == max_sz)
         ptr = 0;
-      }
     }
   };
 
@@ -240,6 +255,14 @@ public:
   int learntsize_adjust_start_confl;
   double learntsize_adjust_inc;
 
+  // duplicate learnts version
+  uint64_t VSIDS_props_limit;
+  uint32_t min_number_of_learnts_copies;
+  uint32_t dupl_db_init_size;
+  uint32_t max_lbd_dup;
+  std::chrono::microseconds duptime;
+  // duplicate learnts version
+
   // Statistics: (read-only member variable)
   //
   uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts,
@@ -247,6 +270,14 @@ public:
   uint64_t dec_vars, clauses_literals, learnts_literals, max_literals,
       tot_literals;
   uint64_t chrono_backtrack, non_chrono_backtrack;
+
+  // duplicate learnts version
+  uint64_t duplicates_added_conflicts;
+  uint64_t duplicates_added_tier2;
+  uint64_t duplicates_added_minimization;
+  uint64_t dupl_db_size;
+
+  // duplicate learnts version
 
   vec<uint32_t> picked;
   vec<uint32_t> conflicted;
@@ -343,6 +374,12 @@ protected:
 
   ClauseAllocator ca;
 
+  // duplicate learnts version
+  std::map<int32_t, std::map<uint32_t, std::unordered_map<uint64_t, uint32_t>>>
+      ht;
+  uint32_t reduceduplicates(); // Reduce the duplicates DB
+  // duplicate learnts version
+
   int confl_to_chrono;
   int chrono;
 
@@ -435,6 +472,11 @@ protected:
 
   void relocAll(ClauseAllocator &to);
 
+  // duplicate learnts version
+  int is_duplicate(
+      std::vector<uint32_t> &c); // returns TRUE if a clause is duplicate
+  // duplicate learnts version
+
   // Misc:
   //
   int decisionLevel() const; // Gives the current decisionlevel.
@@ -486,14 +528,12 @@ protected:
     assert(op == 'a' || op == 'd');
     *buf_ptr++ = op;
     buf_len++;
-    for (int i = 0; i < c.size(); i++) {
+    for (int i = 0; i < c.size(); i++)
       byteDRUP(c[i]);
-    }
     *buf_ptr++ = 0;
     buf_len++;
-    if (buf_len > 1048576) {
+    if (buf_len > 1048576)
       binDRUP_flush(drup_file);
-    }
   }
 
   static inline void binDRUP_strengthen(const Clause &c, Lit l,
@@ -501,14 +541,12 @@ protected:
     *buf_ptr++ = 'a';
     buf_len++;
     for (int i = 0; i < c.size(); i++)
-      if (c[i] != l) {
+      if (c[i] != l)
         byteDRUP(c[i]);
-      }
     *buf_ptr++ = 0;
     buf_len++;
-    if (buf_len > 1048576) {
+    if (buf_len > 1048576)
       binDRUP_flush(drup_file);
-    }
   }
 
   static inline void binDRUP_flush(FILE *drup_file) {
@@ -590,9 +628,8 @@ inline void Solver::insertVarOrder(Var x) {
   Heap<VarOrderLt> &order_heap =
       DISTANCE ? order_heap_distance
                : ((!VSIDS) ? order_heap_CHB : order_heap_VSIDS);
-  if (!order_heap.inHeap(x) && decision[x]) {
+  if (!order_heap.inHeap(x) && decision[x])
     order_heap.insert(x);
-  }
 }
 
 inline void Solver::varDecayActivity() { var_inc *= (1 / var_decay); }
@@ -600,34 +637,30 @@ inline void Solver::varDecayActivity() { var_inc *= (1 / var_decay); }
 inline void Solver::varBumpActivity(Var v, double mult) {
   if ((activity_VSIDS[v] += var_inc * mult) > 1e100) {
     // Rescale:
-    for (int i = 0; i < nVars(); i++) {
+    for (int i = 0; i < nVars(); i++)
       activity_VSIDS[i] *= 1e-100;
-    }
     var_inc *= 1e-100;
   }
 
   // Update order_heap with respect to new activity:
-  if (order_heap_VSIDS.inHeap(v)) {
+  if (order_heap_VSIDS.inHeap(v))
     order_heap_VSIDS.decrease(v);
-  }
 }
 
 inline void Solver::claDecayActivity() { cla_inc *= (1 / clause_decay); }
 inline void Solver::claBumpActivity(Clause &c) {
   if ((c.activity() += cla_inc) > 1e20) {
     // Rescale:
-    for (int i = 0; i < learnts_local.size(); i++) {
+    for (int i = 0; i < learnts_local.size(); i++)
       ca[learnts_local[i]].activity() *= 1e-20;
-    }
     cla_inc *= 1e-20;
   }
 }
 
 inline void Solver::checkGarbage(void) { return checkGarbage(garbage_frac); }
 inline void Solver::checkGarbage(double gf) {
-  if (ca.wasted() > ca.size() * gf) {
+  if (ca.wasted() > ca.size() * gf)
     garbageCollect();
-  }
 }
 
 // NOTE: enqueue does not set the ok flag! (only public methods do)
@@ -688,11 +721,10 @@ inline int Solver::nFreeVars() const {
 }
 inline void Solver::setPolarity(Var v, bool b) { polarity[v] = b; }
 inline void Solver::setDecisionVar(Var v, bool b) {
-  if (b && !decision[v]) {
+  if (b && !decision[v])
     dec_vars++;
-  } else if (!b && decision[v]) {
+  else if (!b && decision[v])
     dec_vars--;
-  }
 
   decision[v] = b;
   if (b && !order_heap_CHB.inHeap(v)) {

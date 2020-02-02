@@ -39,9 +39,8 @@ template <class V, class T> static inline void remove(V &ts, const T &t) {
   for (; j < ts.size() && ts[j] != t; j++)
     ;
   assert(j < ts.size());
-  for (; j < ts.size() - 1; j++) {
+  for (; j < ts.size() - 1; j++)
     ts[j] = ts[j + 1];
-  }
   ts.pop();
 }
 
@@ -62,9 +61,8 @@ template <class T> static inline void copy(const T &from, T &to) { to = from; }
 // Recursive case:
 template <class T>
 static inline void copy(const vec<T> &from, vec<T> &to, bool append = false) {
-  if (!append) {
+  if (!append)
     to.clear();
-  }
   for (int i = 0; i < from.size(); i++) {
     to.push();
     copy(from[i], to.last());

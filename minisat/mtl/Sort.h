@@ -42,9 +42,8 @@ void selectionSort(T *array, int size, LessThan lt) {
   for (i = 0; i < size - 1; i++) {
     best_i = i;
     for (j = i + 1; j < size; j++) {
-      if (lt(array[j], array[best_i])) {
+      if (lt(array[j], array[best_i]))
         best_i = j;
-      }
     }
     tmp = array[i];
     array[i] = array[best_i];
@@ -56,9 +55,8 @@ template <class T> static inline void selectionSort(T *array, int size) {
 }
 
 template <class T, class LessThan> void sort(T *array, int size, LessThan lt) {
-  if (size <= 15) {
+  if (size <= 15)
     selectionSort(array, size, lt);
-  }
 
   else {
     T pivot = array[size / 2];
@@ -67,16 +65,15 @@ template <class T, class LessThan> void sort(T *array, int size, LessThan lt) {
     int j = size;
 
     for (;;) {
-      do {
+      do
         i++;
-      } while (lt(array[i], pivot));
-      do {
+      while (lt(array[i], pivot));
+      do
         j--;
-      } while (lt(pivot, array[j]));
+      while (lt(pivot, array[j]));
 
-      if (i >= j) {
+      if (i >= j)
         break;
-      }
 
       tmp = array[i];
       array[i] = array[j];

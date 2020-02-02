@@ -39,13 +39,11 @@ static void readClause(B &in, Solver &S, vec<Lit> &lits) {
   lits.clear();
   for (;;) {
     parsed_lit = parseInt(in);
-    if (parsed_lit == 0) {
+    if (parsed_lit == 0)
       break;
-    }
     var = abs(parsed_lit) - 1;
-    while (var >= S.nVars()) {
+    while (var >= S.nVars())
       S.newVar();
-    }
     lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
   }
 }
@@ -58,9 +56,9 @@ static void parse_DIMACS_main(B &in, Solver &S) {
   int cnt = 0;
   for (;;) {
     skipWhitespace(in);
-    if (*in == EOF) {
+    if (*in == EOF)
       break;
-    } else if (*in == 'p') {
+    else if (*in == 'p') {
       if (eagerMatch(in, "p cnf")) {
         vars = parseInt(in);
         clauses = parseInt(in);
@@ -70,22 +68,20 @@ static void parse_DIMACS_main(B &in, Solver &S) {
       } else {
         printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
       }
-    } else if (*in == 'c' || *in == 'p') {
+    } else if (*in == 'c' || *in == 'p')
       skipLine(in);
-    } else {
+    else {
       cnt++;
       readClause(in, S, lits);
       S.addClause_(lits);
     }
   }
-  if (vars != S.nVars()) {
+  if (vars != S.nVars())
     fprintf(stderr,
             "WARNING! DIMACS header mismatch: wrong number of variables.\n");
-  }
-  if (cnt != clauses) {
+  if (cnt != clauses)
     fprintf(stderr,
             "WARNING! DIMACS header mismatch: wrong number of clauses.\n");
-  }
 }
 
 // Inserts problem into solver.
@@ -104,9 +100,8 @@ static void simple_readClause(B &in, Solver &S, vec<Lit> &lits) {
   lits.clear();
   for (;;) {
     parsed_lit = parseInt(in);
-    if (parsed_lit == 0) {
+    if (parsed_lit == 0)
       break;
-    }
     var = abs(parsed_lit) - 1;
     lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
   }
@@ -121,9 +116,9 @@ static void check_solution_DIMACS_main(B &in, Solver &S) {
   bool ok = true;
   for (;;) {
     skipWhitespace(in);
-    if (*in == EOF) {
+    if (*in == EOF)
       break;
-    } else if (*in == 'p') {
+    else if (*in == 'p') {
       if (eagerMatch(in, "p cnf")) {
         vars = parseInt(in);
         clauses = parseInt(in);
@@ -133,23 +128,21 @@ static void check_solution_DIMACS_main(B &in, Solver &S) {
       } else {
         printf("c PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
       }
-    } else if (*in == 'c' || *in == 'p') {
+    } else if (*in == 'c' || *in == 'p')
       skipLine(in);
-    } else {
+    else {
       cnt++;
       int parsed_lit, var;
       bool ok = false;
       for (;;) {
         parsed_lit = parseInt(in);
-        if (parsed_lit == 0) {
-          break;
-        } //{printf("\n"); break;}
+        if (parsed_lit == 0)
+          break; //{printf("\n"); break;}
         var = abs(parsed_lit) - 1;
         // printf("%d ", parsed_lit);
         if ((parsed_lit > 0 && S.model[var] == l_True) ||
-            (parsed_lit < 0 && S.model[var] == l_False)) {
+            (parsed_lit < 0 && S.model[var] == l_False))
           ok = true;
-        }
       }
       if (!ok) {
         printf("c clause %d is not satisfied\n", cnt);
@@ -158,12 +151,11 @@ static void check_solution_DIMACS_main(B &in, Solver &S) {
       }
     }
   }
-  if (cnt != clauses) {
+  if (cnt != clauses)
     printf("c WARNING! DIMACS header mismatch: wrong number of clauses.%d %d\n",
            cnt, clauses);
-  } else if (ok) {
+  else if (ok)
     printf("c solution checked against the original DIMACS file\n");
-  }
 }
 
 template <class Solver>

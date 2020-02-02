@@ -2,7 +2,7 @@
 Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 Copyright (c) 2007,      Niklas Sorensson
 
- Chanseok Oh's MiniSat Patch Series -- Copyright (c) 2015, Chanseok Oh
+Chanseok Oh's MiniSat Patch Series -- Copyright (c) 2015, Chanseok Oh
 
 Maple_LCM, Based on MapleCOMSPS_DRUP -- Copyright (c) 2017, Mao Luo, Chu-Min LI,
 Fan Xiao: implementing a learnt clause minimisation approach Reference: M. Luo,
@@ -13,6 +13,13 @@ Maple_LCM_Dist, Based on Maple_LCM -- Copyright (c) 2017, Fan Xiao, Chu-Min LI,
 Mao Luo: using a new branching heuristic called Distance at the beginning of
 search
 
+MapleLCMDistChronoBT, based on Maple_LCM_Dist -- Copyright (c), Alexander Nadel,
+Vadim Ryvchin: "Chronological Backtracking" in SAT-2018, pp. 111-121.
+
+MapleLCMDistChronoBT-DL, based on MapleLCMDistChronoBT -- Copyright (c), Stepan
+Kochemazov, Oleg Zaikin, Victor Kondratiev, Alexander Semenov: The solver was
+augmented with heuristic that moves duplicate learnt clauses into the core/tier2
+tiers depending on a number of parameters.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -52,6 +59,10 @@ void printStats(Solver &solver) {
   double cpu_time = cpuTime();
   double mem_used = memUsedPeak();
   printf("c restarts              : %" PRIu64 "\n", solver.starts);
+  printf("c duplicate learnts_cnf : %" PRIu64 "\n",
+         solver.duplicates_added_conflicts);
+  printf("c duplicate learnts_min : %" PRIu64 "\n",
+         solver.duplicates_added_minimization);
   printf("c conflicts             : %-12" PRIu64 "   (%.0f /sec)\n",
          solver.conflicts, solver.conflicts / cpu_time);
   printf("c decisions             : %-12" PRIu64
@@ -72,9 +83,8 @@ void printStats(Solver &solver) {
              (double)(solver.non_chrono_backtrack + solver.chrono_backtrack),
          (solver.chrono_backtrack * 100) /
              (double)(solver.non_chrono_backtrack + solver.chrono_backtrack));
-  if (mem_used != 0) {
+  if (mem_used != 0)
     printf("c Memory used           : %.2f MB\n", mem_used);
-  }
   printf("c CPU time              : %g s\n", cpu_time);
 }
 
@@ -106,7 +116,7 @@ int main(int argc, char **argv) {
   try {
     setUsageHelp("USAGE: %s [options] <input-file> <result-output-file>\n\n  "
                  "where input may be either in plain or gzipped DIMACS.\n");
-    printf("c This is MapleLCMDistChronoBT.\n");
+    printf("c This is MapleLCMDistChronoBT-DL.\n");
 
 #if defined(__linux__)
     fpu_control_t oldcw, newcw;
@@ -141,9 +151,8 @@ int main(int argc, char **argv) {
     SimpSolver S;
     double initial_time = cpuTime();
 
-    if (!pre) {
+    if (!pre)
       S.eliminate(true);
-    }
 
     S.parsing = true;
     S.verbosity = verb;
@@ -170,9 +179,8 @@ int main(int argc, char **argv) {
       getrlimit(RLIMIT_CPU, &rl);
       if (rl.rlim_max == RLIM_INFINITY || (rlim_t)cpu_lim < rl.rlim_max) {
         rl.rlim_cur = cpu_lim;
-        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
+        if (setrlimit(RLIMIT_CPU, &rl) == -1)
           printf("c WARNING! Could not set resource limit: CPU-time.\n");
-        }
       }
     }
 
@@ -183,22 +191,19 @@ int main(int argc, char **argv) {
       getrlimit(RLIMIT_AS, &rl);
       if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
         rl.rlim_cur = new_mem_lim;
-        if (setrlimit(RLIMIT_AS, &rl) == -1) {
+        if (setrlimit(RLIMIT_AS, &rl) == -1)
           printf("c WARNING! Could not set resource limit: Virtual memory.\n");
-        }
       }
     }
 
-    if (argc == 1) {
+    if (argc == 1)
       printf("c Reading from standard input... Use '--help' for help.\n");
-    }
 
     gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
-    if (in == NULL) {
+    if (in == NULL)
       printf("c ERROR! Could not open file: %s\n",
              argc == 1 ? "<stdin>" : argv[1]),
           exit(1);
-    }
 
     if (S.verbosity > 0) {
       printf("c ============================[ Problem Statistics "
@@ -221,11 +226,10 @@ int main(int argc, char **argv) {
     }
 
     double parsed_time = cpuTime();
-    if (S.verbosity > 0) {
+    if (S.verbosity > 0)
       printf("c |  Parse time:           %12.2f s                              "
              "         |\n",
              parsed_time - initial_time);
-    }
 
     // Change to signal-handlers that will only notify the solver and allow it
     // to terminate voluntarily:
@@ -244,9 +248,8 @@ int main(int argc, char **argv) {
     }
 
     if (!S.okay()) {
-      if (res != NULL) {
+      if (res != NULL)
         fprintf(res, "UNSAT\n"), fclose(res);
-      }
       if (S.verbosity > 0) {
         printf("c "
                "==============================================================="
@@ -264,21 +267,18 @@ int main(int argc, char **argv) {
         fprintf(S.drup_file, "0\n");
 #endif
       }
-      if (S.drup_file && S.drup_file != stdout) {
+      if (S.drup_file && S.drup_file != stdout)
         fclose(S.drup_file);
-      }
       exit(20);
     }
 
     if (dimacs) {
-      if (S.verbosity > 0) {
+      if (S.verbosity > 0)
         printf("c ==============================[ Writing DIMACS "
                "]===============================\n");
-      }
       S.toDimacs((const char *)dimacs);
-      if (S.verbosity > 0) {
+      if (S.verbosity > 0)
         printStats(S);
-      }
       exit(0);
     }
 
@@ -295,10 +295,9 @@ int main(int argc, char **argv) {
     if (ret == l_True) {
       printf("v ");
       for (int i = 0; i < S.nVars(); i++)
-        if (S.model[i] != l_Undef) {
+        if (S.model[i] != l_Undef)
           printf("%s%s%d", (i == 0) ? "" : " ",
                  (S.model[i] == l_True) ? "" : "-", i + 1);
-        }
       printf(" 0\n");
     }
 
@@ -310,24 +309,21 @@ int main(int argc, char **argv) {
       fprintf(S.drup_file, "0\n");
 #endif
     }
-    if (S.drup_file && S.drup_file != stdout) {
+    if (S.drup_file && S.drup_file != stdout)
       fclose(S.drup_file);
-    }
 
     if (res != NULL) {
       if (ret == l_True) {
         fprintf(res, "SAT\n");
         for (int i = 0; i < S.nVars(); i++)
-          if (S.model[i] != l_Undef) {
+          if (S.model[i] != l_Undef)
             fprintf(res, "%s%s%d", (i == 0) ? "" : " ",
                     (S.model[i] == l_True) ? "" : "-", i + 1);
-          }
         fprintf(res, " 0\n");
-      } else if (ret == l_False) {
+      } else if (ret == l_False)
         fprintf(res, "UNSAT\n");
-      } else {
+      else
         fprintf(res, "INDET\n");
-      }
       fclose(res);
     }
 

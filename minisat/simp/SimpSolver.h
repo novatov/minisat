@@ -89,8 +89,8 @@ public:
   //
   virtual void garbageCollect();
 
-// Generate a (possibly simplified) DIMACS file:
-//
+  // Generate a (possibly simplified) DIMACS file:
+  //
 #if 0
     void    toDimacs  (const char* file, const vec<Lit>& assumps);
     void    toDimacs  (const char* file);
@@ -105,8 +105,7 @@ public:
   int grow; // Allow a variable elimination step to grow by a number of clauses
             // (default to zero).
   int clause_lim; // Variables are not eliminated if it produces a resolvent
-                  // with a length above this limit.
-  // -1 means no limit.
+                  // with a length above this limit. -1 means no limit.
   int subsumption_lim; // Do not check if subsumption against a clause larger
                        // than this. -1 means no limit.
   double simp_garbage_frac; // A different limit for when to issue a GC during
@@ -198,9 +197,8 @@ inline void SimpSolver::updateElimHeap(Var v) {
   assert(use_simplification);
   // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
   if (elim_heap.inHeap(v) ||
-      (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)) {
+      (!frozen[v] && !isEliminated(v) && value(v) == l_Undef))
     elim_heap.update(v);
-  }
 }
 
 inline bool SimpSolver::addClause(const vec<Lit> &ps) {

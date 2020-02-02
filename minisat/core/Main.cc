@@ -63,9 +63,8 @@ void printStats(Solver &solver) {
          solver.tot_literals,
          (solver.max_literals - solver.tot_literals) * 100 /
              (double)solver.max_literals);
-  if (mem_used != 0) {
+  if (mem_used != 0)
     printf("c Memory used           : %.2f MB\n", mem_used);
-  }
   printf("c CPU time              : %g s\n", cpu_time);
 }
 
@@ -138,9 +137,8 @@ int main(int argc, char **argv) {
       getrlimit(RLIMIT_CPU, &rl);
       if (rl.rlim_max == RLIM_INFINITY || (rlim_t)cpu_lim < rl.rlim_max) {
         rl.rlim_cur = cpu_lim;
-        if (setrlimit(RLIMIT_CPU, &rl) == -1) {
+        if (setrlimit(RLIMIT_CPU, &rl) == -1)
           printf("c WARNING! Could not set resource limit: CPU-time.\n");
-        }
       }
     }
 
@@ -151,22 +149,19 @@ int main(int argc, char **argv) {
       getrlimit(RLIMIT_AS, &rl);
       if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
         rl.rlim_cur = new_mem_lim;
-        if (setrlimit(RLIMIT_AS, &rl) == -1) {
+        if (setrlimit(RLIMIT_AS, &rl) == -1)
           printf("c WARNING! Could not set resource limit: Virtual memory.\n");
-        }
       }
     }
 
-    if (argc == 1) {
+    if (argc == 1)
       printf("c Reading from standard input... Use '--help' for help.\n");
-    }
 
     gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
-    if (in == NULL) {
+    if (in == NULL)
       printf("c ERROR! Could not open file: %s\n",
              argc == 1 ? "<stdin>" : argv[1]),
           exit(1);
-    }
 
     if (S.verbosity > 0) {
       printf("c ============================[ Problem Statistics "
@@ -203,9 +198,8 @@ int main(int argc, char **argv) {
     signal(SIGXCPU, SIGINT_interrupt);
 
     if (!S.simplify()) {
-      if (res != NULL) {
+      if (res != NULL)
         fprintf(res, "UNSAT\n"), fclose(res);
-      }
       if (S.verbosity > 0) {
         printf("c "
                "==============================================================="
@@ -235,10 +229,9 @@ int main(int argc, char **argv) {
     if (ret == l_True) {
       printf("v ");
       for (int i = 0; i < S.nVars(); i++)
-        if (S.model[i] != l_Undef) {
+        if (S.model[i] != l_Undef)
           printf("%s%s%d", (i == 0) ? "" : " ",
                  (S.model[i] == l_True) ? "" : "-", i + 1);
-        }
       printf(" 0\n");
     }
 
@@ -246,16 +239,14 @@ int main(int argc, char **argv) {
       if (ret == l_True) {
         fprintf(res, "SAT\n");
         for (int i = 0; i < S.nVars(); i++)
-          if (S.model[i] != l_Undef) {
+          if (S.model[i] != l_Undef)
             fprintf(res, "%s%s%d", (i == 0) ? "" : " ",
                     (S.model[i] == l_True) ? "" : "-", i + 1);
-          }
         fprintf(res, " 0\n");
-      } else if (ret == l_False) {
+      } else if (ret == l_False)
         fprintf(res, "UNSAT\n");
-      } else {
+      else
         fprintf(res, "INDET\n");
-      }
       fclose(res);
     }
 

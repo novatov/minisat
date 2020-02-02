@@ -31,11 +31,10 @@ void Minisat::parseOptions(int &argc, char **argv, bool strict) {
     const char *str = argv[i];
     if (match(str, "--") && match(str, Option::getHelpPrefixString()) &&
         match(str, "help")) {
-      if (*str == '\0') {
+      if (*str == '\0')
         printUsageAndExit(argc, argv);
-      } else if (match(str, "-verb")) {
+      else if (match(str, "-verb"))
         printUsageAndExit(argc, argv, true);
-      }
     } else {
       bool parsed_ok = false;
 
@@ -48,14 +47,13 @@ void Minisat::parseOptions(int &argc, char **argv, bool strict) {
       }
 
       if (!parsed_ok)
-        if (strict && match(argv[i], "-")) {
+        if (strict && match(argv[i], "-"))
           fprintf(stderr,
                   "ERROR! Unknown flag \"%s\". Use '--%shelp' for help.\n",
                   argv[i], Option::getHelpPrefixString()),
               exit(1);
-        } else {
+        else
           argv[j++] = argv[i];
-        }
     }
   }
 
@@ -68,9 +66,8 @@ void Minisat::setHelpPrefixStr(const char *str) {
 }
 void Minisat::printUsageAndExit(int argc, char **argv, bool verbose) {
   const char *usage = Option::getUsageString();
-  if (usage != NULL) {
+  if (usage != NULL)
     fprintf(stderr, usage, argv[0]);
-  }
 
   sort(Option::getOptionList(), Option::OptionLt());
 
@@ -81,11 +78,10 @@ void Minisat::printUsageAndExit(int argc, char **argv, bool verbose) {
     const char *cat = Option::getOptionList()[i]->category;
     const char *type = Option::getOptionList()[i]->type_name;
 
-    if (cat != prev_cat) {
+    if (cat != prev_cat)
       fprintf(stderr, "\n%s OPTIONS:\n\n", cat);
-    } else if (type != prev_type) {
+    else if (type != prev_type)
       fprintf(stderr, "\n");
-    }
 
     Option::getOptionList()[i]->help(verbose);
 

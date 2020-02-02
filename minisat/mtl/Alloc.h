@@ -49,9 +49,8 @@ public:
     capacity(start_cap);
   }
   ~RegionAllocator() {
-    if (memory != NULL) {
+    if (memory != NULL)
       ::free(memory);
-    }
   }
 
   uint32_t size() const { return sz; }
@@ -85,9 +84,8 @@ public:
   }
 
   void moveTo(RegionAllocator &to) {
-    if (to.memory != NULL) {
+    if (to.memory != NULL)
       ::free(to.memory);
-    }
     to.memory = memory;
     to.sz = sz;
     to.cap = cap;
@@ -99,9 +97,8 @@ public:
 };
 
 template <class T> void RegionAllocator<T>::capacity(uint32_t min_cap) {
-  if (cap >= min_cap) {
+  if (cap >= min_cap)
     return;
-  }
 
   uint32_t prev_cap = cap;
   while (cap < min_cap) {
@@ -113,9 +110,8 @@ template <class T> void RegionAllocator<T>::capacity(uint32_t min_cap) {
     uint32_t delta = ((cap >> 1) + (cap >> 3) + 2) & ~1;
     cap += delta;
 
-    if (cap <= prev_cap) {
+    if (cap <= prev_cap)
       throw OutOfMemoryException();
-    }
   }
   // printf(" .. (%p) cap = %u\n", this, cap);
 
@@ -134,9 +130,8 @@ typename RegionAllocator<T>::Ref RegionAllocator<T>::alloc(int size) {
   sz += size;
 
   // Handle overflow:
-  if (sz < prev_sz) {
+  if (sz < prev_sz)
     throw OutOfMemoryException();
-  }
 
   return prev_sz;
 }

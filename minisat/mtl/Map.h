@@ -99,9 +99,8 @@ private:
 
     int old_cap = cap;
     int newsize = primes[0];
-    for (int i = 1; newsize <= cap && i < nprimes; i++) {
+    for (int i = 1; newsize <= cap && i < nprimes; i++)
       newsize = primes[i];
-    }
 
     table = new vec<Pair>[newsize];
     cap = newsize;
@@ -129,9 +128,8 @@ public:
     const D *res = NULL;
     const vec<Pair> &ps = table[index(k)];
     for (int i = 0; i < ps.size(); i++)
-      if (equals(ps[i].key, k)) {
+      if (equals(ps[i].key, k))
         res = &ps[i].data;
-      }
     assert(res != NULL);
     return *res;
   }
@@ -142,25 +140,22 @@ public:
     D *res = NULL;
     vec<Pair> &ps = table[index(k)];
     for (int i = 0; i < ps.size(); i++)
-      if (equals(ps[i].key, k)) {
+      if (equals(ps[i].key, k))
         res = &ps[i].data;
-      }
     assert(res != NULL);
     return *res;
   }
 
   // PRECONDITION: the key must *NOT* exist in the map.
   void insert(const K &k, const D &d) {
-    if (checkCap(size + 1)) {
+    if (checkCap(size + 1))
       rehash();
-    }
     _insert(k, d);
     size++;
   }
   bool peek(const K &k, D &d) const {
-    if (size == 0) {
+    if (size == 0)
       return false;
-    }
     const vec<Pair> &ps = table[index(k)];
     for (int i = 0; i < ps.size(); i++)
       if (equals(ps[i].key, k)) {
@@ -171,14 +166,12 @@ public:
   }
 
   bool has(const K &k) const {
-    if (size == 0) {
+    if (size == 0)
       return false;
-    }
     const vec<Pair> &ps = table[index(k)];
     for (int i = 0; i < ps.size(); i++)
-      if (equals(ps[i].key, k)) {
+      if (equals(ps[i].key, k))
         return true;
-      }
     return false;
   }
 

@@ -71,9 +71,8 @@ public:
   int size(void) const { return sz; }
   void shrink(int nelems) {
     assert(nelems <= sz);
-    for (int i = 0; i < nelems; i++) {
+    for (int i = 0; i < nelems; i++)
       sz--, data[sz].~T();
-    }
   }
   void shrink_(int nelems) {
     assert(nelems <= sz);
@@ -87,16 +86,14 @@ public:
 
   // Stack interface:
   void push(void) {
-    if (sz == cap) {
+    if (sz == cap)
       capacity(sz + 1);
-    }
     new (&data[sz]) T();
     sz++;
   }
   void push(const T &elem) {
-    if (sz == cap) {
+    if (sz == cap)
       capacity(sz + 1);
-    }
     data[sz++] = elem;
   }
   void push_(const T &elem) {
@@ -124,9 +121,8 @@ public:
   void copyTo(vec<T> &copy) const {
     copy.clear();
     copy.growTo(sz);
-    for (int i = 0; i < sz; i++) {
+    for (int i = 0; i < sz; i++)
       copy[i] = data[i];
-    }
   }
   void moveTo(vec<T> &dest) {
     dest.clear(true);
@@ -140,49 +136,41 @@ public:
 };
 
 template <class T> void vec<T>::capacity(int min_cap) {
-  if (cap >= min_cap) {
+  if (cap >= min_cap)
     return;
-  }
   int add = imax((min_cap - cap + 1) & ~1,
                  ((cap >> 1) + 2) & ~1); // NOTE: grow by approximately 3/2
   if (add > INT_MAX - cap ||
       ((data = (T *)::realloc(data, (cap += add) * sizeof(T))) == NULL) &&
-          errno == ENOMEM) {
+          errno == ENOMEM)
     throw OutOfMemoryException();
-  }
 }
 
 template <class T> void vec<T>::growTo(int size, const T &pad) {
-  if (sz >= size) {
+  if (sz >= size)
     return;
-  }
   capacity(size);
-  for (int i = sz; i < size; i++) {
+  for (int i = sz; i < size; i++)
     data[i] = pad;
-  }
   sz = size;
 }
 
 template <class T> void vec<T>::growTo(int size) {
-  if (sz >= size) {
+  if (sz >= size)
     return;
-  }
   capacity(size);
-  for (int i = sz; i < size; i++) {
+  for (int i = sz; i < size; i++)
     new (&data[i]) T();
-  }
   sz = size;
 }
 
 template <class T> void vec<T>::clear(bool dealloc) {
   if (data != NULL) {
-    for (int i = 0; i < sz; i++) {
+    for (int i = 0; i < sz; i++)
       data[i].~T();
-    }
     sz = 0;
-    if (dealloc) {
+    if (dealloc)
       free(data), data = NULL, cap = 0;
-    }
   }
 }
 

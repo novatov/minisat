@@ -140,16 +140,15 @@ public:
   virtual bool parse(const char *str) {
     const char *span = str;
 
-    if (!match(span, "-") || !match(span, name) || !match(span, "=")) {
+    if (!match(span, "-") || !match(span, name) || !match(span, "="))
       return false;
-    }
 
     char *end;
     double tmp = strtod(span, &end);
 
-    if (end == NULL) {
+    if (end == NULL)
       return false;
-    } else if (tmp >= range.end && (!range.end_inclusive || tmp != range.end)) {
+    else if (tmp >= range.end && (!range.end_inclusive || tmp != range.end)) {
       fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n",
               span, name);
       exit(1);
@@ -201,16 +200,15 @@ public:
   virtual bool parse(const char *str) {
     const char *span = str;
 
-    if (!match(span, "-") || !match(span, name) || !match(span, "=")) {
+    if (!match(span, "-") || !match(span, name) || !match(span, "="))
       return false;
-    }
 
     char *end;
     int32_t tmp = strtol(span, &end, 10);
 
-    if (end == NULL) {
+    if (end == NULL)
       return false;
-    } else if (tmp > range.end) {
+    else if (tmp > range.end) {
       fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n",
               span, name);
       exit(1);
@@ -227,18 +225,16 @@ public:
 
   virtual void help(bool verbose = false) {
     fprintf(stderr, "  -%-12s = %-8s [", name, type_name);
-    if (range.begin == INT32_MIN) {
+    if (range.begin == INT32_MIN)
       fprintf(stderr, "imin");
-    } else {
+    else
       fprintf(stderr, "%4d", range.begin);
-    }
 
     fprintf(stderr, " .. ");
-    if (range.end == INT32_MAX) {
+    if (range.end == INT32_MAX)
       fprintf(stderr, "imax");
-    } else {
+    else
       fprintf(stderr, "%4d", range.end);
-    }
 
     fprintf(stderr, "] (default: %d)\n", value);
     if (verbose) {
@@ -273,16 +269,15 @@ public:
   virtual bool parse(const char *str) {
     const char *span = str;
 
-    if (!match(span, "-") || !match(span, name) || !match(span, "=")) {
+    if (!match(span, "-") || !match(span, name) || !match(span, "="))
       return false;
-    }
 
     char *end;
     int64_t tmp = strtoll(span, &end, 10);
 
-    if (end == NULL) {
+    if (end == NULL)
       return false;
-    } else if (tmp > range.end) {
+    else if (tmp > range.end) {
       fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n",
               span, name);
       exit(1);
@@ -299,18 +294,16 @@ public:
 
   virtual void help(bool verbose = false) {
     fprintf(stderr, "  -%-12s = %-8s [", name, type_name);
-    if (range.begin == INT64_MIN) {
+    if (range.begin == INT64_MIN)
       fprintf(stderr, "imin");
-    } else {
+    else
       fprintf(stderr, "%4" PRIi64, range.begin);
-    }
 
     fprintf(stderr, " .. ");
-    if (range.end == INT64_MAX) {
+    if (range.end == INT64_MAX)
       fprintf(stderr, "imax");
-    } else {
+    else
       fprintf(stderr, "%4" PRIi64, range.end);
-    }
 
     fprintf(stderr, "] (default: %" PRIi64 ")\n", value);
     if (verbose) {
@@ -342,9 +335,8 @@ public:
   virtual bool parse(const char *str) {
     const char *span = str;
 
-    if (!match(span, "-") || !match(span, name) || !match(span, "=")) {
+    if (!match(span, "-") || !match(span, name) || !match(span, "="))
       return false;
-    }
 
     value = span;
     return true;
@@ -395,9 +387,8 @@ public:
 
     fprintf(stderr, "  -%s, -no-%s", name, name);
 
-    for (uint32_t i = 0; i < 32 - strlen(name) * 2; i++) {
+    for (uint32_t i = 0; i < 32 - strlen(name) * 2; i++)
       fprintf(stderr, " ");
-    }
 
     fprintf(stderr, " ");
     fprintf(stderr, "(default: %s)\n", value ? "on" : "off");
