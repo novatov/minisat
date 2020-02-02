@@ -269,7 +269,7 @@ public:
       conflicts_VSIDS;
   uint64_t dec_vars, clauses_literals, learnts_literals, max_literals,
       tot_literals;
-  uint64_t chrono_backtrack, non_chrono_backtrack;
+  uint64_t chrono_backtrack, non_chrono_backtrack, num_shortened_reason;
 
   // duplicate learnts version
   uint64_t duplicates_added_conflicts;

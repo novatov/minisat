@@ -76,6 +76,7 @@ void printStats(Solver &solver) {
          solver.tot_literals,
          (solver.max_literals - solver.tot_literals) * 100 /
              (double)solver.max_literals);
+  printf("c replaced reason       : %-12" PRIu64 "\n", solver.num_shortened_reason);
   printf("c backtracks            : %-12" PRIu64
          "   (NCB %0.f%% , CB %0.f%%)\n",
          solver.non_chrono_backtrack + solver.chrono_backtrack,
