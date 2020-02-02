@@ -99,14 +99,14 @@ add_library(maple_lcm_dist-lib-shared SHARED ${MAPLE_LCM_DIST_LIB_SOURCES})
 target_link_libraries(maple_lcm_dist-lib-shared ${ZLIB_LIBRARY})
 target_link_libraries(maple_lcm_dist-lib-static ${ZLIB_LIBRARY})
 
-add_executable(maple_lcm_dist_core minisat/core/Main.cc)
+# add_executable(maple_lcm_dist_core minisat/core/Main.cc)
 add_executable(maple_lcm_dist_simp minisat/simp/Main.cc)
 
 if(STATIC_BINARIES)
-  target_link_libraries(maple_lcm_dist_core maple_lcm_dist-lib-static)
+  #target_link_libraries(maple_lcm_dist_core maple_lcm_dist-lib-static)
   target_link_libraries(maple_lcm_dist_simp maple_lcm_dist-lib-static)
 else()
-  target_link_libraries(maple_lcm_dist_core maple_lcm_dist-lib-shared)
+  #target_link_libraries(maple_lcm_dist_core maple_lcm_dist-lib-shared)
   target_link_libraries(maple_lcm_dist_simp maple_lcm_dist-lib-shared)
 endif()
 
@@ -122,7 +122,7 @@ set_target_properties(maple_lcm_dist_simp       PROPERTIES OUTPUT_NAME "maple_lc
 #--------------------------------------------------------------------------------------------------
 # Installation targets:
 
-install(TARGETS maple_lcm_dist-lib-static maple_lcm_dist-lib-shared maple_lcm_dist_core maple_lcm_dist_simp
+install(TARGETS maple_lcm_dist-lib-static maple_lcm_dist-lib-shared maple_lcm_dist_simp
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
