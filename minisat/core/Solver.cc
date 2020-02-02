@@ -938,7 +938,7 @@ Var Solver::newVar(bool sign, bool dvar) {
   watches.init(mkLit(v, false));
   watches.init(mkLit(v, true));
   assigns.push(l_Undef);
-  vardata.push(mkVarData(CRef_Undef, 0));
+  vardata.push(mkVarData(CRef_Undef, 0, 0));
   activity_CHB.push(0);
   activity_VSIDS.push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
 
@@ -1245,6 +1245,7 @@ though.
 |________________________________________________________________________________________________@*/
 void Solver::analyze(CRef confl, vec<Lit> &out_learnt, int &out_btlevel,
                      int &out_lbd) {
+  std::cout << "New analysis" << std::endl;
   int pathC = 0;
   Lit p = lit_Undef;
 
@@ -1258,6 +1259,7 @@ void Solver::analyze(CRef confl, vec<Lit> &out_learnt, int &out_btlevel,
   do {
     assert(confl != CRef_Undef); // (otherwise should be UIP)
     Clause &c = ca[confl];
+    std::cout << "confl clause: " << c << std::endl;
 
     // For binary clauses, we don't rearrange literals in propagate(), so check
     // and make sure the first is an implied lit.
@@ -1292,6 +1294,19 @@ void Solver::analyze(CRef confl, vec<Lit> &out_learnt, int &out_btlevel,
         claBumpActivity(c);
     }
 
+    //reason has been updated.
+    int swapped_with = -1;
+    if (p != lit_Undef && value(c[0]) != l_True) {
+      for (int i = 0; i < c.size(); i++) {
+        if (value(c[i]) == l_True) {
+          swapped_with = i;
+          std::swap(c[0], c[i]);
+          std::cout << "SWAPPED" << std::endl;
+          break;
+        }
+      }
+    }
+
     for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
       Lit q = c[j];
 
@@ -1309,6 +1324,10 @@ void Solver::analyze(CRef confl, vec<Lit> &out_learnt, int &out_btlevel,
       }
     }
 
+    if (swapped_with != -1) {
+      std::swap(c[0], c[swapped_with]);
+    }
+
     // Select next clause to look at:
     do {
       while (!seen[var(trail[index--])])
@@ -1316,6 +1335,7 @@ void Solver::analyze(CRef confl, vec<Lit> &out_learnt, int &out_btlevel,
       p = trail[index + 1];
     } while (level(var(p)) < nDecisionLevel);
 
+    std::cout << "examining var: " << var(p)+1 << std::endl;
     confl = reason(var(p));
     seen[var(p)] = 0;
     pathC--;
@@ -1539,7 +1559,7 @@ void Solver::uncheckedEnqueue(Lit p, int level, CRef from) {
   }
 
   assigns[x] = lbool(!sign(p));
-  vardata[x] = mkVarData(from, level);
+  vardata[x] = mkVarData(from, level, trail.size()+1);
   trail.push_(p);
 }
 
@@ -1616,13 +1636,101 @@ CRef Solver::propagate() {
       }
 
       // Look for new watch:
-      for (int k = 2; k < c.size(); k++)
-        if (value(c[k]) != l_False) {
+      int toprop_pos = -1;
+      for (int k = 2; k < c.size(); k++) {
+        if (value(c[k]) == l_Undef ||
+          (value(c[k]) == l_True && toprop_pos != -1) ||
+          (value(first) == l_Undef && value(c[k]) != l_False)) {
           c[1] = c[k];
           c[k] = false_lit;
           watches[~c[1]].push(w);
           goto NextClause;
         }
+        if (value(c[k]) == l_True) {
+          assert(value(first) != l_Undef);
+          assert(toprop_pos == -1);
+          toprop_pos = k;
+        }
+      }
+
+      if (toprop_pos != -1) {
+        Lit toprop = c[toprop_pos];
+        CRef ref = reason(var(toprop));
+        if (ref != CRef_Undef) {
+          Clause &orig_reason = ca[ref];
+          if (c.size() < orig_reason.size()) {
+            uint32_t orig_sublevel = vardata[var(toprop)].sublevel;
+            uint32_t orig_level = vardata[var(toprop)].level;
+            bool can_replace = true;
+            int max_sublevel = 0;
+            int max_level = 0;
+            for(int i = 0; i < c.size() && can_replace; i ++) {
+              int v = var(c[i]);
+              if (v == var(toprop)) {
+                assert(value(c[i]) == l_True);
+                continue;
+              }
+              //std::cout << "i: " << i << " val is undef: " << (value(c[i]) == l_Undef) << std::endl;
+              assert(value(c[i]) == l_False);
+              int subl = vardata[v].sublevel;
+              max_sublevel = std::max(subl, max_sublevel);
+
+              int l = vardata[v].level;
+              max_level = std::max(l, max_level);
+              if (subl >= orig_sublevel) {
+                //it's dependent on it already propagated
+                //so we cannot replace it
+                can_replace = false;
+              }
+            }
+            if (can_replace && max_sublevel+1 < orig_sublevel) {
+              std::cout
+              << "toprop: " <<  var(toprop)+1
+              << " orig sublevel: " <<  orig_sublevel
+              << " max sublevel of new reason: " <<  max_sublevel
+              << " orig level: " << orig_level
+              << " max level of new reason: " <<  max_level
+              << " orig reason size size: " << orig_reason.size()
+              << " new reason size: " << c.size()
+              << std::endl;
+              for(int i = 0; i < c.size(); i++) {
+                int v = var(c[i]);
+                if (v != var(toprop)) {
+                  assert(value(c[i]) == l_False);
+                }
+                std::cout << "level of " << v+1 << " : " << vardata[v].level << std::endl;
+                std::cout << "sub level of " << v+1 << " : " << vardata[v].sublevel << std::endl;
+              }
+
+              std::cout << "ORIG reason: " << orig_reason << std::endl;
+              for(int i = 0; i < orig_reason.size(); i++) {
+                int v = var(orig_reason[i]);
+                if (v != var(toprop)) {
+                  assert(value(orig_reason[i]) == l_False);
+                }
+                std::cout << "level of " << v+1 << " : " << vardata[v].level << std::endl;
+                std::cout << "sub level of " << v+1 << " : " << vardata[v].sublevel << std::endl;
+              }
+              assert(max_level == orig_level);
+
+
+              assert(max_level <= orig_level);
+
+              int v = var(toprop);
+              std::cout << "v: " <<  v+1 << std::endl;
+              vardata[v].reason = cr;
+              //vardata[v].level = max_level;
+              //vardata[v].sublevel = max_sublevel;
+            }
+          }
+        }
+
+        int k = toprop_pos;
+        c[1] = c[k];
+        c[k] = false_lit;
+        watches[~c[1]].push(w);
+        goto NextClause;
+      }
 
       // Did not find watch -- clause is unit under assignment:
       *j++ = w;
@@ -1831,6 +1939,7 @@ bool Solver::collectFirstUIP(CRef confl) {
   for (int i = trail.size() - 1; i >= limit; i--) {
     Lit p = trail[i];
     Var v = var(p);
+    std::cout << "Looking for var: " << v << std::endl;
     if (seen[v]) {
       int currentDecLevel = level(v);
       //      if (currentDecLevel==decisionLevel())
@@ -1996,6 +2105,8 @@ lbool Solver::search(int &nof_conflicts) {
         DISTANCE = 0;
       else
         DISTANCE = 1;
+
+      DISTANCE = 0;
       if (VSIDS && DISTANCE)
         collectFirstUIP(confl);
 

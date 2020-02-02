@@ -292,9 +292,10 @@ protected:
   struct VarData {
     CRef reason;
     int level;
+    int sublevel;
   };
-  static inline VarData mkVarData(CRef cr, int l) {
-    VarData d = {cr, l};
+  static inline VarData mkVarData(CRef cr, int l, int sublevel) {
+    VarData d = {cr, l, sublevel};
     return d;
   }
 
