@@ -1653,6 +1653,7 @@ CRef Solver::propagate() {
       for (int k = 2; k < c.size(); k++) {
         if (value(c[k]) == l_Undef ||
           (value(c[k]) == l_True && toprop_pos != -1) ||
+          (DISTANCE == 1 && value(c[k]) != l_False) ||
           (value(first) == l_Undef && value(c[k]) != l_False)) {
           c[1] = c[k];
           c[k] = false_lit;
