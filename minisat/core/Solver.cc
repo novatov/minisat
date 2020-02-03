@@ -1965,9 +1965,20 @@ bool Solver::collectFirstUIP(CRef confl) {
       if (--pathCs[currentDecLevel] != 0) {
         Clause &rc = ca[reason(v)];
 
+        int reasonVarLevel = var_iLevel_tmp[v] + 1;
+        if (reasonVarLevel > max_level)
+          max_level = reasonVarLevel;
+        if (rc.size() == 2 && value(rc[0]) == l_False) {
+          // Special case for binary clauses
+          // The first one has to be SAT
+          assert(value(rc[1]) != l_False);
+          Lit tmp = rc[0];
+          rc[0] = rc[1], rc[1] = tmp;
+        }
+
         //reason has been updated.
         int swapped_with = -1;
-        if (p != lit_Undef && value(rc[0]) != l_True) {
+        if (value(rc[0]) != l_True) {
           for (int i = 0; i < rc.size(); i++) {
             if (value(rc[i]) == l_True) {
               swapped_with = i;
@@ -1980,17 +1991,6 @@ bool Solver::collectFirstUIP(CRef confl) {
           }
         }
 
-
-        int reasonVarLevel = var_iLevel_tmp[v] + 1;
-        if (reasonVarLevel > max_level)
-          max_level = reasonVarLevel;
-        if (rc.size() == 2 && value(rc[0]) == l_False) {
-          // Special case for binary clauses
-          // The first one has to be SAT
-          assert(value(rc[1]) != l_False);
-          Lit tmp = rc[0];
-          rc[0] = rc[1], rc[1] = tmp;
-        }
         for (int j = 1; j < rc.size(); j++) {
           Lit q = rc[j];
           Var v1 = var(q);
