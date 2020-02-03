@@ -2145,7 +2145,6 @@ lbool Solver::search(int &nof_conflicts) {
       else
         DISTANCE = 1;
 
-      DISTANCE = 0;
       if (VSIDS && DISTANCE)
         collectFirstUIP(confl);
 
