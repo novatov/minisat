@@ -1,0 +1,32 @@
+diff --git a/minisat/mtl/template.mk b/minisat/mtl/template.mk
+index 3f443fc..7de4aab 100644
+--- a/minisat/mtl/template.mk
++++ b/minisat/mtl/template.mk
+@@ -13,24 +13,24 @@ DSRCS      = $(foreach dir, $(DEPDIR), $(filter-out $(MROOT)/$(dir)/Main.cc, $(w
+ CHDRS      = $(wildcard $(PWD)/*.h)
+ COBJS      = $(CSRCS:.cc=.o) $(DSRCS:.cc=.o)
+ 
+ PCOBJS     = $(addsuffix p,  $(COBJS))
+ DCOBJS     = $(addsuffix d,  $(COBJS))
+ RCOBJS     = $(addsuffix r,  $(COBJS))
+ 
+ 
+-CXX       ?= g++
++CXX       ?= clang++
+ CFLAGS    ?= -Wall -Wno-parentheses
+ LFLAGS    ?= -Wall
+ 
+ COPTIMIZE ?= -O3
+ 
+-CFLAGS    += -I$(MROOT) -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
+-LFLAGS    += -lz
++CFLAGS    += -I$(MROOT) -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -fsanitize=undefined -fsanitize=return -fsanitize=bounds -fsanitize=address -fno-omit-frame-pointer
++LFLAGS    += -fsanitize=address -fsanitize=undefined -fsanitize=bounds -lz
+ 
+ .PHONY : s p d r rs clean 
+ 
+ s:	$(EXEC)
+ p:	$(EXEC)_profile
+ d:	$(EXEC)_debug
+ r:	$(EXEC)_release
+ rs:	$(EXEC)_static
