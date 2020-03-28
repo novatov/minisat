@@ -236,8 +236,8 @@ int main(int argc, char **argv) {
 
     // Change to signal-handlers that will only notify the solver and allow it
     // to terminate voluntarily:
-    signal(SIGINT, SIGINT_interrupt);
-    signal(SIGXCPU, SIGINT_interrupt);
+//     signal(SIGINT, SIGINT_interrupt);
+//     signal(SIGXCPU, SIGINT_interrupt);
 
     S.parsing = false;
     S.eliminate(true);
