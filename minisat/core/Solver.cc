@@ -57,7 +57,7 @@ unsigned char Solver::drup_buf[2 * 1024 * 1024];
 unsigned char *Solver::buf_ptr = drup_buf;
 #endif
 
-// #define VERB_SWAP
+//#define VERB_SWAP
 
 //=================================================================================================
 // Options:
@@ -347,7 +347,7 @@ void Solver::simpleUncheckEnqueue(Lit p, CRef from) {
   assigns[var(p)] =
       lbool(!sign(p)); // this makes a lbool object whose value is sign(p)
   vardata[var(p)].reason = from;
-  vardata[var(p)].sublevel = trail.size()+1;
+  vardata[var(p)].sublevel = trail.size();
   trail.push_(p);
 }
 
@@ -1139,7 +1139,7 @@ void Solver::cancelUntil(int bLevel) {
     trail.shrink(trail.size() - trail_lim[bLevel]);
     trail_lim.shrink(trail_lim.size() - bLevel);
     for (int nLitId = add_tmp.size() - 1; nLitId >= 0; --nLitId) {
-      vardata[var(add_tmp[nLitId])].sublevel = trail.size()+1;
+      vardata[var(add_tmp[nLitId])].sublevel = trail.size();
       trail.push_(add_tmp[nLitId]);
     }
 
@@ -1305,10 +1305,10 @@ void Solver::analyze(CRef confl, vec<Lit> &out_learnt, int &out_btlevel,
     //reason has been updated.
     int swapped_with = -1;
     if (p != lit_Undef && value(c[0]) != l_True) {
-      for (int i = 0; i < c.size(); i++) {
+      for (int i = 1; i < c.size(); i++) {
         if (value(c[i]) == l_True) {
           swapped_with = i;
-          std::swap(c[0], c[i]);
+          std::swap(c[0], c[swapped_with]);
 #ifdef VERB_SWAP
           std::cout << "SWAPPED" << std::endl;
 #endif
@@ -1341,9 +1341,20 @@ void Solver::analyze(CRef confl, vec<Lit> &out_learnt, int &out_btlevel,
 
     // Select next clause to look at:
     do {
-      while (!seen[var(trail[index--])])
+      while (!seen[var(trail[index--])]) {
+#ifdef VERB_SWAP
+          std::cout
+          << "lit:" << trail[index+1]
+          << " lev:" << index+1
+          << " trail lev: " << vardata[var(trail[index+1])].sublevel
+          << std::endl;
+#endif
+
+          assert(vardata[var(trail[index+1])].sublevel == index+1);
+      }
         ;
       p = trail[index + 1];
+      assert(vardata[var(p)].sublevel == index+1);
     } while (level(var(p)) < nDecisionLevel);
 
 #ifdef VERB_SWAP
@@ -1572,7 +1583,7 @@ void Solver::uncheckedEnqueue(Lit p, int level, CRef from) {
   }
 
   assigns[x] = lbool(!sign(p));
-  vardata[x] = mkVarData(from, level, trail.size()+1);
+  vardata[x] = mkVarData(from, level, trail.size());
   trail.push_(p);
 }
 
@@ -1678,7 +1689,7 @@ CRef Solver::propagate() {
             bool can_replace = true;
             int max_sublevel = 0;
             int max_level = 0;
-            for(int i = 0; i < c.size() && can_replace; i ++) {
+            for(int i = 0; i < c.size(); i ++) {
               int v = var(c[i]);
               if (v == var(toprop)) {
                 assert(value(c[i]) == l_True);
@@ -1695,9 +1706,10 @@ CRef Solver::propagate() {
                 //it's dependent on it already propagated
                 //so we cannot replace it
                 can_replace = false;
+                break;
               }
             }
-            if (can_replace && max_sublevel+1 < orig_sublevel) {
+            if (can_replace) {
 #ifdef VERB_SWAP
               std::cout
               << "toprop: " <<  var(toprop)+1
@@ -1723,13 +1735,13 @@ CRef Solver::propagate() {
                 if (v != var(toprop)) {
                   assert(value(orig_reason[i]) == l_False);
                 }
-#ifdef VERB_SWAP
+                #ifdef VERB_SWAP
                 std::cout << "level of " << v+1 << " : " << vardata[v].level << std::endl;
                 std::cout << "sub level of " << v+1 << " : " << vardata[v].sublevel << std::endl;
-#endif
+                #endif
               }
               //assert(max_level == orig_level);
-//               assert(max_level <= orig_level);
+              //assert(max_level <= orig_level);
 
               int v = var(toprop);
               vardata[v].reason = cr;
