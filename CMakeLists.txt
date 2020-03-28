@@ -41,9 +41,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # Configurable options:
 
 option(STATIC_BINARIES "Link binaries statically." ON)
-option(USE_SORELEASE   "Use SORELEASE in shared library filename." ON)
+set(BUILD_SHARED_LIBS OFF)
+SET(CMAKE_EXE_LINKER_FLAGS "-static")
 
 add_compile_options( -g)
+add_compile_options( -static)
 add_compile_options( -pthread )
 
 add_compile_options("$<$<CONFIG:RELWITHDEBINFO>:-O3>")
@@ -94,35 +96,16 @@ set(MAPLE_LCM_DIST_LIB_SOURCES
     minisat/simp/SimpSolver.cc)
 
 add_library(maple_lcm_dist-lib-static STATIC ${MAPLE_LCM_DIST_LIB_SOURCES})
-add_library(maple_lcm_dist-lib-shared SHARED ${MAPLE_LCM_DIST_LIB_SOURCES})
-
-target_link_libraries(maple_lcm_dist-lib-shared ${ZLIB_LIBRARY})
 target_link_libraries(maple_lcm_dist-lib-static ${ZLIB_LIBRARY})
-
-# add_executable(maple_lcm_dist_core minisat/core/Main.cc)
 add_executable(maple_lcm_dist_simp minisat/simp/Main.cc)
-
-if(STATIC_BINARIES)
-  #target_link_libraries(maple_lcm_dist_core maple_lcm_dist-lib-static)
-  target_link_libraries(maple_lcm_dist_simp maple_lcm_dist-lib-static)
-else()
-  #target_link_libraries(maple_lcm_dist_core maple_lcm_dist-lib-shared)
-  target_link_libraries(maple_lcm_dist_simp maple_lcm_dist-lib-shared)
-endif()
-
+target_link_libraries(maple_lcm_dist_simp maple_lcm_dist-lib-static)
 set_target_properties(maple_lcm_dist-lib-static PROPERTIES OUTPUT_NAME "maple_lcm_dist")
-set_target_properties(maple_lcm_dist-lib-shared
-  PROPERTIES
-    OUTPUT_NAME "maple_lcm_dist"
-    VERSION ${MAPLE_LCM_DIST_VERSION}
-    SOVERSION ${MAPLE_LCM_DIST_SOVERSION})
-
 set_target_properties(maple_lcm_dist_simp       PROPERTIES OUTPUT_NAME "maple_lcm_dist")
 
 #--------------------------------------------------------------------------------------------------
 # Installation targets:
 
-install(TARGETS maple_lcm_dist-lib-static maple_lcm_dist-lib-shared maple_lcm_dist_simp
+install(TARGETS maple_lcm_dist-lib-static maple_lcm_dist_simp
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
